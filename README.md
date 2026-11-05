@@ -1,4 +1,4 @@
-Que se vea mejor la imagen y el titulo, ayudame a que se veo mejor todo, tipo este otro ejemplo de brandemy: <div align="center">
+<div align="center">
   <img width="400" alt="techsmart-app" src="https://github.com/user-attachments/assets/92046601-fce2-4ed7-867a-4aa09a20ef89" />
 </div>
 # Techsmart App 
