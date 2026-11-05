@@ -1,7 +1,7 @@
 <div align="center">
   <img width="400" alt="techsmart-app" src="https://github.com/user-attachments/assets/92046601-fce2-4ed7-867a-4aa09a20ef89" />
 </div>
-# Techsmart App 
+ <h1>Techsmart App</h1>
 
 Aplicación móvil desarrollada para el negocio Techsmart, enfocada en la consulta de productos tecnológicos y suministros informáticos. Su propósito es facilitar a los clientes el acceso al catálogo de productos y a la información de los artículos disponibles.
 
