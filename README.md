@@ -29,4 +29,4 @@ Para trabajar con el proyecto de forma local, sigue estos pasos:
 5. Ejecutar la aplicación en un emulador o dispositivo Android compatible.
 
 📌 Información del Proyecto
-Proyecto desarrollado como parte del segundo laboratorio de la asignatura Tecnologías de la Información.
+Desarrollado como parte del segundo laboratorio de la asignatura Tecnologías de la Información.
