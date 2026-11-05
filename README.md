@@ -1,14 +1,9 @@
- <div align="center">
-
-  <img width="280" alt="Techsmart Logo" src="https://github.com/user-attachments/assets/92046601-fce2-4ed7-867a-4aa09a20ef89" />
-
-  <h1>Techsmart App</h1>
-
-  **Aplicación móvil para la consulta de productos tecnológicos y suministros informáticos.**
-
+Que se vea mejor la imagen y el titulo, ayudame a que se veo mejor todo, tipo este otro ejemplo de brandemy: <div align="center">
+  <img width="400" alt="techsmart-app" src="https://github.com/user-attachments/assets/92046601-fce2-4ed7-867a-4aa09a20ef89" />
 </div>
+# Techsmart App 
 
----
+Aplicación móvil desarrollada para el negocio Techsmart, enfocada en la consulta de productos tecnológicos y suministros informáticos. Su propósito es facilitar a los clientes el acceso al catálogo de productos y a la información de los artículos disponibles.
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -18,28 +13,20 @@
 - **Diseño de interfaces:** Jetpack Compose.
 - **Prototipado y diseño inicial:** Stitch.
 
----
-
 ## 🚀 Instalación y Configuración
 
 Para trabajar con el proyecto de forma local, sigue estos pasos:
 
-**1. Clonar el repositorio:**
+1. Clonar el repositorio:
 
-```bash
-git clone https://github.com/Davies2025/techsmart-b2b-app.git
-```
+   ```bash
+   git clone https://github.com/Davies2025/techsmart-b2b-app.git
+   ```
 
-**2. Abrir el proyecto** desde Android Studio.
+2. Abrir el proyecto desde Android Studio.
+3. Esperar la sincronización de Gradle.
+4. Configurar los servicios de Firebase, si son necesarios.
+5. Ejecutar la aplicación en un emulador o dispositivo Android compatible.
 
-**3. Esperar** la sincronización y configuración de Gradle.
-
-**4. Configurar** los servicios de Firebase, si son necesarios.
-
-**5. Ejecutar** la aplicación en un emulador o dispositivo Android compatible.
-
----
-
-## 📌 Información del Proyecto
-
+📌 Información del Proyecto
 Proyecto desarrollado como parte del segundo laboratorio de la asignatura Tecnologías de la Información.
