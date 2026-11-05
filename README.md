@@ -28,5 +28,5 @@ Para trabajar con el proyecto de forma local, sigue estos pasos:
 4. Configurar los servicios de Firebase, si son necesarios.
 5. Ejecutar la aplicación en un emulador o dispositivo Android compatible.
 
-📌 Información del Proyecto
+📌 Información del Proyecto - 
 Desarrollado como parte del segundo laboratorio de la asignatura Tecnologías de la Información.
