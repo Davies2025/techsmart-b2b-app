@@ -1,27 +1,38 @@
 package com.example.techsmart.data.repository
 
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import android.net.Uri
 import com.example.techsmart.data.model.Cotizacion
 import com.example.techsmart.data.model.Producto
 import com.example.techsmart.data.model.TicketRMA
+import com.example.techsmart.data.model.Usuario
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import java.security.MessageDigest
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class TechsmartRepository(
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 ) {
 
     // ==========================================
-    // 1. CATÁLOGO DE PRODUCTOS (Colección: productos)
+    // SEGURIDAD: HASHING DE CONTRASEÑA (SHA-256)
     // ==========================================
+    fun hashPassword(password: String): String {
+        val bytes = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
 
-    /**
-     * Escucha el catálogo de productos en tiempo real mediante un Flow.
-     * Mapea la colección 'productos' de Firestore a la lista de objetos Producto.
-     */
+    // ==========================================
+    // 1. PRODUCTOS (Colección: productos)
+    // ==========================================
     fun getProductosStream(): Flow<Result<List<Producto>>> = callbackFlow {
         val listener = db.collection("productos")
             .addSnapshotListener { snapshot, error ->
@@ -39,9 +50,6 @@ class TechsmartRepository(
         awaitClose { listener.remove() }
     }
 
-    /**
-     * Consulta puntual de un producto por su ID semántico o document ID.
-     */
     suspend fun getProductoById(id: String): Result<Producto?> {
         return try {
             val doc = db.collection("productos").document(id).get().await()
@@ -52,18 +60,12 @@ class TechsmartRepository(
         }
     }
 
-    // ===========================
-    // 2. MÓDULO DE COTIZACIONES
-    // ===========================
-
-    /**
-     * Registra una nueva cotización formal con su folio fiscal y desglose de partidas.
-     */
+    // ==========================================
+    // 2. COTIZACIONES (Colección: cotizaciones)
+    // ==========================================
     suspend fun guardarCotizacion(cotizacion: Cotizacion): Result<String> {
         return try {
             val docRef = db.collection("cotizaciones").document()
-
-            // Generación de folio alfanumérico si no viene definido
             val folioGenerado = if (cotizacion.folio.isBlank()) {
                 "COT-${(1000..9999).random()}/B2B-${(100..999).random()}"
             } else {
@@ -72,16 +74,12 @@ class TechsmartRepository(
 
             val cotizacionFinal = cotizacion.copy(id = docRef.id, folio = folioGenerado)
             docRef.set(cotizacionFinal).await()
-
             Result.success(docRef.id)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    /**
-     * Obtiene el historial de cotizaciones de un cliente ordenadas por fecha descendente.
-     */
     fun getCotizacionesByCorreo(correo: String): Flow<Result<List<Cotizacion>>> = callbackFlow {
         val listener = db.collection("cotizaciones")
             .whereEqualTo("correo", correo)
@@ -101,17 +99,13 @@ class TechsmartRepository(
         awaitClose { listener.remove() }
     }
 
-    // ==============================
-    // 3. MÓDULO DE GARANTÍAS Y RMA
-    // ==============================
-
-    /**
-     * Registra un ticket de reclamo RMA o falla prematura DOA (< 7 días).
-     */
+    // ==========================================
+    // 3. TICKETS RMA (Colección: rma_tickets)
+    // ==========================================
     suspend fun crearTicketRMA(ticket: TicketRMA): Result<String> {
         return try {
-            val docRef = db.collection("tickets_rma").document()
-
+            // Alineado con la web: colección 'rma_tickets'
+            val docRef = db.collection("rma_tickets").document()
             val folioRMA = if (ticket.folio.isBlank()) {
                 "RMA-2026-${(1000..9999).random()}"
             } else {
@@ -120,31 +114,66 @@ class TechsmartRepository(
 
             val ticketFinal = ticket.copy(id = docRef.id, folio = folioRMA)
             docRef.set(ticketFinal).await()
-
             Result.success(docRef.id)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    /**
-     * Obtiene los tickets de reclamo asociados a un cliente.
-     */
-    fun getTicketsRMAByCliente(cliente: String): Flow<Result<List<TicketRMA>>> = callbackFlow {
-        val listener = db.collection("tickets_rma")
-            .whereEqualTo("cliente", cliente)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(Result.failure(error))
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    val tickets = snapshot.documents.mapNotNull { doc ->
-                        doc.toObject(TicketRMA::class.java)?.apply { id = doc.id }
-                    }
-                    trySend(Result.success(tickets))
-                }
+    // ==========================================
+    // 4. USUARIOS Y AUTENTICACIÓN (Colección: usuarios)
+    // ==========================================
+    suspend fun registrarUsuario(usuario: Usuario, rawPassword: String): Result<Usuario> {
+        return try {
+            val correoNormalizado = usuario.correo.trim().lowercase()
+            val docRef = db.collection("usuarios").document(correoNormalizado)
+
+            val passwordHash = if (rawPassword.isNotBlank()) hashPassword(rawPassword) else ""
+            val fechaActual = SimpleDateFormat("dd MMM yyyy", Locale("es", "SV")).format(Date())
+
+            val usuarioFinal = usuario.copy(
+                id = correoNormalizado,
+                correo = correoNormalizado,
+                passwordHash = passwordHash,
+                rol = "cliente_b2b",
+                estado = "activo",
+                fechaRegistro = fechaActual
+            )
+
+            docRef.set(usuarioFinal).await()
+            Result.success(usuarioFinal)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun obtenerUsuarioPorCorreo(correo: String): Result<Usuario?> {
+        return try {
+            val correoNormalizado = correo.trim().lowercase()
+            val doc = db.collection("usuarios").document(correoNormalizado).get().await()
+            if (doc.exists()) {
+                val user = doc.toObject(Usuario::class.java)?.apply { id = doc.id }
+                Result.success(user)
+            } else {
+                Result.success(null)
             }
-        awaitClose { listener.remove() }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==========================================
+    // 5. FIREBASE STORAGE (Subida de Adjuntos)
+    // ==========================================
+    suspend fun subirArchivoAdjunto(fileUri: Uri, folder: String = "rfq"): Result<String> {
+        return try {
+            val fileName = "${System.currentTimeMillis()}_${fileUri.lastPathSegment}"
+            val fileRef = storage.reference.child("$folder/$fileName")
+            fileRef.putFile(fileUri).await()
+            val downloadUrl = fileRef.downloadUrl.await().toString()
+            Result.success(downloadUrl)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

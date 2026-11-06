@@ -14,7 +14,7 @@ object TieredPricingEngine {
 
     /**
      * Evalúa la matriz de descuentos escalonados asociada al producto.
-     * Si la cantidad no alcanza el umbral mínimo mayorista, asigna el precio base de lista.
+     * Utiliza 'precioEfectivo' para soportar tanto 'price' (Web) como 'precio'.
      */
     fun calcularPrecioUnitario(producto: Producto, cantidad: Int): Double {
         if (cantidad <= 0) return producto.precio
@@ -23,7 +23,10 @@ object TieredPricingEngine {
             .filter { cantidad >= it.minQty }
             .maxByOrNull { it.minQty }
 
-        return tierAplicable?.precio ?: producto.precio
+        val precioTier = tierAplicable?.precioEfectivo ?: 0.0
+
+        // Si el tramo escalonado tiene un valor mayor a cero lo utiliza; de lo contrario usa el precio base
+        return if (precioTier > 0.0) precioTier else producto.precio
     }
 
     /**

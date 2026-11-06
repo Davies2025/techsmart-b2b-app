@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -61,4 +62,17 @@ dependencies {
 
     // Corrutinas para llamadas asíncronas con Firebase
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.0")
+
+    // Jetpack Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.8.5")
+
+    // Iconos extendidos de Jetpack Compose
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // When using the BoM, don't specify versions in Firebase dependencies
+    implementation("com.google.firebase:firebase-analytics")
+
+    // Firebase Storage para subida de adjuntos (RFQ y RMA)
+    implementation("com.google.firebase:firebase-storage-ktx")
+
 }
