@@ -22,6 +22,13 @@ sealed class Screen(
     data object Cart : Screen("cart", "Cotizaciones", Icons.Outlined.RequestQuote, "Cotizaciones")
     data object Rma : Screen("rma", "Reclamos", Icons.Outlined.SupportAgent, "Reclamos")
 
+    // Flujo de compra ("Comprar ahora"). No están en la barra inferior: se marca "Cotizaciones".
+    data object Carrito : Screen("carrito", "Carrito", Icons.Outlined.RequestQuote, "Carrito de Compras")
+    data object Checkout : Screen("checkout", "Pago", Icons.Outlined.RequestQuote, "Checkout")
+    data object Pedido : Screen("pedido/{folio}", "Pedido", Icons.Outlined.RequestQuote, "Mi Pedido") {
+        fun ruta(folio: String) = "pedido/$folio"
+    }
+
     object AuthRoutes {
         const val LOGIN = "login"
         const val REGISTER = "register"
@@ -34,3 +41,6 @@ val bottomNavItems = listOf(
     Screen.Cart,
     Screen.Rma
 )
+
+/** Pantallas del flujo de compra (muestran las barras y marcan "Cotizaciones"). */
+val pantallasCompra = listOf(Screen.Carrito, Screen.Checkout, Screen.Pedido)

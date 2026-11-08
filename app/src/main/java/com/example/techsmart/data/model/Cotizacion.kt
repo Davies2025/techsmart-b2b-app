@@ -62,7 +62,10 @@ data class Cotizacion(
     val folio: String = "",
     val fecha: String = "",
     val vencimiento: String = "",
-    val estado: String = "En Revisión", // "En Revisión" | "Aprobada" | "Pendiente de Pago" | "Despachada" | "Cancelada"
+    // Cotización: "En Revisión"
+    // Compra: "Pendiente de Pago" -> "Aprobada" (pagada) -> "En Bodega" -> "Despachada" -> "Entregada"
+    // Cualquiera: "Cancelada". Los avances después del pago los hace un administrador desde la web.
+    val estado: String = ESTADO_EN_REVISION,
     val tipoCliente: String = TIPO_EMPRESA, // "Empresa / Corporativo" | "Cliente Particular"
     val razonSocial: String = "",
     val nit: String = "",
@@ -78,14 +81,39 @@ data class Cotizacion(
     val total: Double = 0.0,
     val notas: String = "",
     val archivoAdjuntoUrl: String = "",
+
+    // ---- Solo en compras ("Comprar ahora"); vacíos en una cotización ----
+    val metodoPago: String = "",        // "tarjeta" | "transferencia" | "credito_b2b" (igual que la web)
+    val pagoReferencia: String = "",    // p. ej. "Visa •••• 1111" (nunca el número completo ni el CVV)
+    val documentoFiscal: String = "",   // "Comprobante de Crédito Fiscal" | "Factura Consumidor Final"
+
     val usuarioCorreo: String = "",
     @ServerTimestamp
     val createdAt: Timestamp? = null
 ) {
+    /** true si se creó con "Comprar ahora" (tiene método de pago). */
+    @get:Exclude
+    val esCompra: Boolean get() = metodoPago.isNotBlank()
+
     companion object {
         const val TIPO_EMPRESA = "Empresa / Corporativo"
         const val TIPO_PARTICULAR = "Cliente Particular"
 
         val TIEMPOS_ENTREGA = listOf("Inmediato (24h)", "24 - 72 hrs", "Bajo Pedido (7-15d)")
+
+        const val ESTADO_EN_REVISION = "En Revisión"
+        const val ESTADO_PENDIENTE_PAGO = "Pendiente de Pago"
+        const val ESTADO_APROBADA = "Aprobada"
+        const val ESTADO_EN_BODEGA = "En Bodega"
+        const val ESTADO_DESPACHADA = "Despachada"
+        const val ESTADO_ENTREGADA = "Entregada"
+        const val ESTADO_CANCELADA = "Cancelada"
+
+        const val PAGO_TARJETA = "tarjeta"
+        const val PAGO_TRANSFERENCIA = "transferencia"
+        const val PAGO_CREDITO = "credito_b2b"
+
+        const val DOC_CCF = "Comprobante de Crédito Fiscal"
+        const val DOC_CONSUMIDOR_FINAL = "Factura Consumidor Final"
     }
 }
