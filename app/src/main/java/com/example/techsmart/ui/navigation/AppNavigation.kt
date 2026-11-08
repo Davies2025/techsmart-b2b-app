@@ -19,6 +19,11 @@ import com.example.techsmart.ui.cart.CartViewModel
 import com.example.techsmart.ui.catalog.CatalogScreen
 import com.example.techsmart.ui.catalog.CatalogViewModel
 import com.example.techsmart.ui.components.BarraSuperiorTechsmart
+import com.example.techsmart.ui.compra.CarritoScreen
+import com.example.techsmart.ui.compra.CheckoutScreen
+import com.example.techsmart.ui.compra.PedidoScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.techsmart.ui.home.HomeScreen
 import com.example.techsmart.ui.rma.RmaScreen
 import com.example.techsmart.ui.rma.RmaViewModel
@@ -45,14 +50,16 @@ fun AppNavigation(
     val currentRoute = navBackStackEntry?.destination?.route
 
     // Barras superior e inferior solo en las pantallas principales (no en login/registro)
-    val pantallaActual = bottomNavItems.find { it.route == currentRoute }
+    val pantallaActual = (bottomNavItems + pantallasCompra).find { it.route == currentRoute }
+    val enCompra = pantallasCompra.any { it.route == currentRoute }
 
     val irA: (Screen) -> Unit = { screen ->
         if (currentRoute != screen.route) {
             navController.navigate(screen.route) {
                 popUpTo(Screen.Inicio.route) { saveState = true }
                 launchSingleTop = true
-                restoreState = true
+                // Cotizaciones siempre abre su lista: no se restaura el carrito, el pago ni un pedido viejo
+                restoreState = screen != Screen.Cart
             }
         }
     }
@@ -81,7 +88,7 @@ fun AppNavigation(
             if (pantallaActual != null) {
                 NavigationBar(containerColor = TsSuperficie, tonalElevation = 0.dp) {
                     bottomNavItems.forEach { screen ->
-                        val seleccionada = currentRoute == screen.route
+                        val seleccionada = currentRoute == screen.route || (enCompra && screen == Screen.Cart)
                         NavigationBarItem(
                             icon = {
                                 // La pestaña de cotizaciones muestra cuántas unidades hay en el lote
@@ -109,7 +116,14 @@ fun AppNavigation(
                                 unselectedIconColor = TsNeutro,
                                 unselectedTextColor = TsNeutro
                             ),
-                            onClick = { irA(screen) }
+                            onClick = {
+                                // Desde el flujo de compra, "Cotizaciones" vuelve a la lista
+                                if (enCompra && screen == Screen.Cart) {
+                                    navController.popBackStack(Screen.Cart.route, inclusive = false)
+                                } else {
+                                    irA(screen)
+                                }
+                            }
                         )
                     }
                 }
@@ -163,7 +177,46 @@ fun AppNavigation(
             composable(Screen.Cart.route) {
                 CartScreen(
                     viewModel = cartViewModel,
-                    onIrACatalogo = { irA(Screen.Catalog) }
+                    onIrACatalogo = { irA(Screen.Catalog) },
+                    onComprarAhora = { navController.navigate(Screen.Carrito.route) },
+                    onVerPedido = { folio -> navController.navigate(Screen.Pedido.ruta(folio)) }
+                )
+            }
+
+            // ---------- Flujo de compra ----------
+            composable(Screen.Carrito.route) {
+                CarritoScreen(
+                    viewModel = cartViewModel,
+                    onVolver = { navController.popBackStack() },
+                    onIrACatalogo = { irA(Screen.Catalog) },
+                    onContinuarPago = { navController.navigate(Screen.Checkout.route) }
+                )
+            }
+            composable(Screen.Checkout.route) {
+                CheckoutScreen(
+                    viewModel = cartViewModel,
+                    onVolver = { navController.popBackStack() },
+                    onCompraConfirmada = { folio ->
+                        // Al volver atrás desde la confirmación se regresa a Cotizaciones, no al checkout
+                        navController.navigate(Screen.Pedido.ruta(folio)) {
+                            popUpTo(Screen.Cart.route)
+                        }
+                    }
+                )
+            }
+            composable(
+                Screen.Pedido.route,
+                arguments = listOf(navArgument("folio") { type = NavType.StringType })
+            ) { entrada ->
+                PedidoScreen(
+                    folio = entrada.arguments?.getString("folio").orEmpty(),
+                    viewModel = cartViewModel,
+                    onVolverInicio = {
+                        navController.navigate(Screen.Inicio.route) {
+                            popUpTo(Screen.Inicio.route) { inclusive = true }
+                        }
+                    },
+                    onVerCotizaciones = { navController.popBackStack(Screen.Cart.route, inclusive = false) }
                 )
             }
             composable(Screen.Rma.route) {

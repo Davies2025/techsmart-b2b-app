@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.ShoppingCartCheckout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,7 +45,9 @@ private const val INDICE_ACTIVAS = 2
 @Composable
 fun CartScreen(
     viewModel: CartViewModel,
-    onIrACatalogo: () -> Unit
+    onIrACatalogo: () -> Unit,
+    onComprarAhora: () -> Unit,
+    onVerPedido: (folio: String) -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -90,7 +93,7 @@ fun CartScreen(
             }
             item {
                 if (state.items.isEmpty()) LoteVacio(onIrACatalogo)
-                else NuevaSolicitud(state, viewModel, onIrACatalogo)
+                else NuevaSolicitud(state, viewModel, onIrACatalogo, onComprarAhora)
             }
             item {
                 EncabezadoSeccion(
@@ -109,7 +112,7 @@ fun CartScreen(
                     MensajeVacio("Aún no tienes cotizaciones.")
                 }
                 else -> items(state.misCotizaciones, key = { it.id.ifBlank { it.folio } }) { cot ->
-                    TarjetaCotizacion(cot)
+                    TarjetaCotizacion(cot, onVerPedido)
                 }
             }
         }
@@ -167,7 +170,8 @@ private fun LoteVacio(onIrACatalogo: () -> Unit) {
 private fun NuevaSolicitud(
     state: CartUiState,
     viewModel: CartViewModel,
-    onIrACatalogo: () -> Unit
+    onIrACatalogo: () -> Unit,
+    onComprarAhora: () -> Unit
 ) {
     // Se precarga con el perfil; luego el cliente puede editarlo
     var datos by remember(state.perfil) { mutableStateOf(datosDesdePerfil(state.perfil)) }
@@ -235,8 +239,29 @@ private fun NuevaSolicitud(
             FilaMonto("Total", dinero(state.totales.total), destacado = true)
         }
 
+        // ---------- Dos salidas del lote: comprar o cotizar ----------
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = onComprarAhora,
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = TsSecundario),
+            modifier = Modifier.fillMaxWidth().height(52.dp)
+        ) {
+            Icon(Icons.Outlined.ShoppingCartCheckout, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(10.dp))
+            Text("Comprar ahora", style = MaterialTheme.typography.titleSmall)
+        }
+        Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            HorizontalDivider(Modifier.weight(1f), color = TsBorde)
+            Text(
+                "  o envía una cotización para revisión  ",
+                style = MaterialTheme.typography.labelSmall,
+                color = TsNeutro
+            )
+            HorizontalDivider(Modifier.weight(1f), color = TsBorde)
+        }
+
         // ---------- Datos del cliente ----------
-        Spacer(Modifier.height(16.dp))
         Campo(if (esEmpresa) "Razón social" else "Nombre completo", datos.razonSocial, Icons.Outlined.Business) {
             datos = datos.copy(razonSocial = it)
         }
@@ -400,7 +425,7 @@ private fun PartidaEditable(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun TarjetaCotizacion(cot: Cotizacion) {
+private fun TarjetaCotizacion(cot: Cotizacion, onVerPedido: (String) -> Unit) {
     var abierta by remember { mutableStateOf(false) }
 
     TarjetaTs(Modifier.fillMaxWidth(), onClick = { abierta = !abierta }) {
@@ -422,6 +447,10 @@ private fun TarjetaCotizacion(cot: Cotizacion) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+        if (cot.esCompra) {
+            Spacer(Modifier.height(4.dp))
+            EtiquetaMono("Compra · ${cot.pagoReferencia}", fondo = TsSuperficieSuave, color = TsSecundario)
+        }
         Spacer(Modifier.height(10.dp))
 
         CajaSuave {
@@ -471,7 +500,8 @@ private fun TarjetaCotizacion(cot: Cotizacion) {
                 buildString {
                     append(cot.fecha)
                     // "15 nov 2026 (en 8 días)" -> "15 nov 2026"; la web puede guardar "Vigencia 8 días"
-                    if (cot.vencimiento.isNotBlank()) append("  ·  Vence: ${cot.vencimiento.substringBefore(" (")}")
+                    val vence = cot.vencimiento.substringBefore(" (")
+                    if (vence.isNotBlank() && vence != "Pagada") append("  ·  Vence: $vence")
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = TsNeutro,
@@ -479,12 +509,18 @@ private fun TarjetaCotizacion(cot: Cotizacion) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                if (abierta) "Ocultar" else "Ver detalle",
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold,
-                color = TsPrimario
-            )
+            if (cot.esCompra) {
+                TextButton(onClick = { onVerPedido(cot.folio) }, contentPadding = PaddingValues(horizontal = 6.dp)) {
+                    Text("Seguimiento", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                }
+            } else {
+                Text(
+                    if (abierta) "Ocultar" else "Ver detalle",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TsPrimario
+                )
+            }
         }
     }
 }

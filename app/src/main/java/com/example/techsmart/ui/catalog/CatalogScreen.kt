@@ -12,7 +12,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
@@ -21,12 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.SubcomposeAsyncImage
 import com.example.techsmart.data.model.Producto
 import com.example.techsmart.ui.components.*
 import com.example.techsmart.ui.theme.*
@@ -341,36 +338,6 @@ private fun TarjetaProducto(producto: Producto, onAgregar: (Int) -> Unit) {
                 Text("Agregar al Lote", style = MaterialTheme.typography.labelLarge)
             }
         }
-    }
-}
-
-@Composable
-private fun ImagenProducto(url: String) {
-    val modificador = Modifier
-        .size(84.dp)
-        .clip(RoundedCornerShape(12.dp))
-        .background(TsSuperficieSuave)
-    if (url.isBlank()) {
-        Box(modificador, contentAlignment = Alignment.Center) {
-            Icon(Icons.Outlined.Inventory2, null, tint = TsNeutro)
-        }
-    } else {
-        SubcomposeAsyncImage(
-            model = url,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = modificador,
-            loading = {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                }
-            },
-            error = {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Outlined.Image, null, tint = TsNeutro)
-                }
-            }
-        )
     }
 }
 

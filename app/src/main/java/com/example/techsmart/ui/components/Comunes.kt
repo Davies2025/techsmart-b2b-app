@@ -254,9 +254,10 @@ fun EtiquetaMono(texto: String, fondo: Color = TsInfoFondo, color: Color = TsInf
 
 /** Colores (fondo, texto) para cada estado de cotización o reclamo. */
 fun coloresEstado(estado: String): Pair<Color, Color> = when (estado) {
-    "Aprobada", "Despachada", "Cambio Aprobado", "Cerrado" -> TsExitoFondo to TsExitoTexto
+    "Aprobada", "Despachada", "Entregada", "Cambio Aprobado", "Cerrado" -> TsExitoFondo to TsExitoTexto
     "Cancelada" -> TsErrorFondo to TsErrorTexto
-    "Pendiente de Pago", "Recibido en Bodega", "En Diagnóstico Técnico" -> TsAvisoFondo to TsAvisoTexto
+    "Pendiente de Pago", "En Bodega", "Recibido en Bodega", "En Diagnóstico Técnico" ->
+        TsAvisoFondo to TsAvisoTexto
     else -> TsInfoFondo to TsInfoTexto // "En Revisión", "Reportado"
 }
 

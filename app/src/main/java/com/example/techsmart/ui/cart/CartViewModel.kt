@@ -30,6 +30,18 @@ data class DatosCotizacion(
     val notas: String = ""
 )
 
+/** Datos de una compra ("Comprar ahora"), ya validados por el checkout. */
+data class DatosCompra(
+    val tipoCliente: String,
+    val razonSocial: String,
+    val documentoFiscal: String,   // NIT (empresa) o DUI / "Consumidor Final" (persona)
+    val contacto: String,
+    val telefono: String,
+    val correo: String,
+    val metodoPago: String,        // Cotizacion.PAGO_*
+    val pagoReferencia: String     // "Visa •••• 1111", "Transferencia bancaria", "Crédito Techsmart 30 días"
+)
+
 data class CartUiState(
     val items: List<ItemCotizacion> = emptyList(),
     // Producto completo de cada partida, para recalcular el precio por volumen al cambiar la cantidad
@@ -40,8 +52,12 @@ data class CartUiState(
     val cargandoCotizaciones: Boolean = false,
     val isSubmitting: Boolean = false,
     val folioGuardado: String? = null,
+    val compraConfirmada: String? = null,   // folio de la compra recién pagada
     val error: String? = null
-)
+) {
+    /** Línea de crédito del perfil (el saldo no se descuenta: es una validación simulada). */
+    val lineaCredito: Double get() = perfil?.lineaCredito?.toDouble() ?: 0.0
+}
 
 class CartViewModel(
     private val repository: TechsmartRepository = TechsmartRepository()
@@ -149,7 +165,7 @@ class CartViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, error = null) }
             val cotizacion = Cotizacion(
-                estado = "En Revisión",
+                estado = Cotizacion.ESTADO_EN_REVISION,
                 tipoCliente = datos.tipoCliente,
                 razonSocial = datos.razonSocial.trim(),
                 nit = datos.nit.trim(),
@@ -185,5 +201,80 @@ class CartViewModel(
                 }
             )
         }
+    }
+
+    // -----------------------------------------------------------------
+    // Compra ("Comprar ahora" -> carrito -> checkout). Pago SIMULADO.
+    // -----------------------------------------------------------------
+
+    /**
+     * Registra la compra en 'cotizaciones' (igual que el checkout de la web):
+     * - Tarjeta o crédito: queda "Aprobada" (pagada).
+     * - Transferencia: queda "Pendiente de Pago" hasta que un administrador la confirme.
+     * Los avances siguientes (En Bodega, Despachada, Entregada) los hace un administrador desde la web.
+     */
+    fun comprar(datos: DatosCompra) {
+        val estado = _uiState.value
+        if (estado.items.isEmpty() || estado.isSubmitting) return
+
+        // Revalida el crédito aquí por si el lote cambió después de elegir el método
+        if (datos.metodoPago == Cotizacion.PAGO_CREDITO && estado.totales.total > estado.lineaCredito) {
+            _uiState.update { it.copy(error = "El total supera tu línea de crédito disponible.") }
+            return
+        }
+
+        val esTransferencia = datos.metodoPago == Cotizacion.PAGO_TRANSFERENCIA
+        val esEmpresa = datos.tipoCliente == Cotizacion.TIPO_EMPRESA
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmitting = true, error = null) }
+            val compra = Cotizacion(
+                folio = "B2B-${(1000..9999).random()}", // mismo formato que el checkout web
+                estado = if (esTransferencia) Cotizacion.ESTADO_PENDIENTE_PAGO else Cotizacion.ESTADO_APROBADA,
+                tipoCliente = datos.tipoCliente,
+                razonSocial = datos.razonSocial.trim(),
+                nit = datos.documentoFiscal.trim().ifBlank { "Consumidor Final" },
+                contacto = datos.contacto.trim(),
+                telefono = datos.telefono.trim(),
+                correo = datos.correo.trim(),
+                tiempoEntrega = "24 - 72 hrs",
+                // Transferencia: 3 días para pagar. Pagada: no vence.
+                validezDias = if (esTransferencia) 3 else 0,
+                vencimiento = if (esTransferencia) "" else "Pagada",
+                items = estado.items,
+                subtotalNeto = estado.totales.subtotalNeto,
+                descuento = estado.totales.descuento,
+                iva = estado.totales.iva,
+                total = estado.totales.total,
+                notas = "Método de procesamiento: ${datos.metodoPago.uppercase()}",
+                metodoPago = datos.metodoPago,
+                pagoReferencia = datos.pagoReferencia,
+                documentoFiscal = if (esEmpresa) Cotizacion.DOC_CCF else Cotizacion.DOC_CONSUMIDOR_FINAL
+            )
+
+            repository.guardarCotizacion(compra).fold(
+                onSuccess = { folio ->
+                    _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            compraConfirmada = folio,
+                            items = emptyList(),
+                            productos = emptyMap(),
+                            totales = TotalesCotizacion()
+                        )
+                    }
+                },
+                onFailure = { err ->
+                    _uiState.update {
+                        it.copy(isSubmitting = false, error = err.toFriendlyMessage())
+                    }
+                }
+            )
+        }
+    }
+
+    // La pantalla de confirmación ya navegó: se limpia para no volver a navegar
+    fun consumirCompraConfirmada() {
+        _uiState.update { it.copy(compraConfirmada = null) }
     }
 }
