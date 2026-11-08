@@ -1,32 +1,45 @@
 package com.example.techsmart.ui.cart
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.Business
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.automirrored.outlined.NoteAdd
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.techsmart.data.model.Cotizacion
 import com.example.techsmart.data.model.ItemCotizacion
 import com.example.techsmart.data.model.Usuario
-import com.example.techsmart.ui.components.EstadoChip
-import com.example.techsmart.ui.components.FilaMonto
-import com.example.techsmart.ui.components.MensajeVacio
-import com.example.techsmart.ui.components.dinero
+import com.example.techsmart.ui.components.*
+import com.example.techsmart.ui.theme.*
+
+// Posición del encabezado "Cotizaciones Activas" dentro de la lista (banner + solicitud)
+private const val INDICE_ACTIVAS = 2
 
 @Composable
 fun CartScreen(
@@ -34,8 +47,8 @@ fun CartScreen(
     onIrACatalogo: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    var pestana by rememberSaveable { mutableIntStateOf(0) }
     val snackbar = remember { SnackbarHostState() }
+    val lista = rememberLazyListState()
 
     LaunchedEffect(Unit) {
         viewModel.cargarPerfil()
@@ -44,8 +57,8 @@ fun CartScreen(
 
     LaunchedEffect(state.folioGuardado) {
         state.folioGuardado?.let { folio ->
-            pestana = 1
             viewModel.consumirCotizacionGuardada()
+            lista.animateScrollToItem(INDICE_ACTIVAS)
             snackbar.showSnackbar("Cotización $folio enviada. Quedó en revisión.")
         }
     }
@@ -56,30 +69,55 @@ fun CartScreen(
         }
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            PrimaryTabRow(selectedTabIndex = pestana) {
-                Tab(
-                    selected = pestana == 0,
-                    onClick = { pestana = 0 },
-                    text = { Text("Nueva (${state.items.sumOf { it.cantidad }})") }
-                )
-                Tab(
-                    selected = pestana == 1,
-                    onClick = { pestana = 1 },
-                    text = { Text("Mis cotizaciones") }
+    Scaffold(
+        containerColor = TsFondo,
+        contentWindowInsets = WindowInsets(0),
+        snackbarHost = { SnackbarHost(snackbar) }
+    ) { padding ->
+        LazyColumn(
+            state = lista,
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            item {
+                BannerSeccion(
+                    icono = Icons.Filled.Bolt,
+                    titulo = "Cotizador B2B & Express",
+                    descripcion = "Precios por volumen e IVA desglosado. Arma tu lote desde el catálogo " +
+                        "y envíalo para revisión."
                 )
             }
-            when (pestana) {
-                0 -> CotizacionActual(state, viewModel, onIrACatalogo)
-                else -> MisCotizaciones(state)
+            item {
+                if (state.items.isEmpty()) LoteVacio(onIrACatalogo)
+                else NuevaSolicitud(state, viewModel, onIrACatalogo)
+            }
+            item {
+                EncabezadoSeccion(
+                    icono = Icons.Outlined.History,
+                    titulo = "Cotizaciones Activas",
+                    contador = state.misCotizaciones.size.let { if (it == 1) "1 registrada" else "$it registradas" }
+                )
+            }
+            when {
+                state.cargandoCotizaciones && state.misCotizaciones.isEmpty() -> item {
+                    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                state.misCotizaciones.isEmpty() -> item {
+                    MensajeVacio("Aún no tienes cotizaciones.")
+                }
+                else -> items(state.misCotizaciones, key = { it.id.ifBlank { it.folio } }) { cot ->
+                    TarjetaCotizacion(cot)
+                }
             }
         }
     }
 }
 
 // ---------------------------------------------------------------------------
-// Pestaña 1: carrito + datos del cliente
+// Nueva solicitud
 // ---------------------------------------------------------------------------
 
 private fun datosDesdePerfil(perfil: Usuario?): DatosCotizacion {
@@ -94,134 +132,172 @@ private fun datosDesdePerfil(perfil: Usuario?): DatosCotizacion {
     )
 }
 
+@Composable
+private fun LoteVacio(onIrACatalogo: () -> Unit) {
+    TarjetaTs(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.AutoMirrored.Outlined.NoteAdd, null, tint = TsPrimario)
+            Spacer(Modifier.width(8.dp))
+            Text("Nueva Solicitud", style = MaterialTheme.typography.titleLarge, color = TsSecundario)
+        }
+        Spacer(Modifier.height(12.dp))
+        CajaSuave {
+            Text("Tu lote está vacío", style = MaterialTheme.typography.titleSmall, color = TsSecundario)
+            Text(
+                "Agrega productos desde el catálogo para armar la cotización.",
+                style = MaterialTheme.typography.bodySmall,
+                color = TsNeutro
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = onIrACatalogo,
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp)
+        ) {
+            Icon(Icons.Outlined.Inventory2, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Ir al catálogo")
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CotizacionActual(
+private fun NuevaSolicitud(
     state: CartUiState,
     viewModel: CartViewModel,
     onIrACatalogo: () -> Unit
 ) {
-    if (state.items.isEmpty()) {
-        Column(
-            Modifier.fillMaxSize().padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text("Tu cotización está vacía", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Agrega productos desde el catálogo para armarla.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = onIrACatalogo) { Text("Ir al catálogo") }
-        }
-        return
-    }
-
     // Se precarga con el perfil; luego el cliente puede editarlo
     var datos by remember(state.perfil) { mutableStateOf(datosDesdePerfil(state.perfil)) }
     val esEmpresa = datos.tipoCliente == Cotizacion.TIPO_EMPRESA
     val faltanDatos = datos.razonSocial.isBlank() || datos.contacto.isBlank() ||
         datos.correo.isBlank() || datos.telefono.isBlank() || (esEmpresa && datos.nit.isBlank())
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        state.items.forEach { item ->
-            PartidaEditable(
-                item = item,
-                onCantidad = { viewModel.cambiarCantidad(item.productoId, it) },
-                onEliminar = { viewModel.eliminarItem(item.productoId) }
+    TarjetaTs(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.AutoMirrored.Outlined.NoteAdd, null, tint = TsPrimario)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "Nueva Solicitud",
+                style = MaterialTheme.typography.titleLarge,
+                color = TsSecundario,
+                modifier = Modifier.weight(1f)
             )
+            EtiquetaMono("${state.items.sumOf { it.cantidad }} unid.")
         }
+        Spacer(Modifier.height(12.dp))
 
-        OutlinedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp)) {
-                FilaMonto("Subtotal neto", dinero(state.totales.subtotalNeto))
-                if (state.totales.descuento > 0.0) {
-                    FilaMonto(
-                        "Ahorro por volumen",
-                        "−" + dinero(state.totales.descuento),
-                        colorValor = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-                FilaMonto("IVA (13%)", dinero(state.totales.iva))
-                HorizontalDivider(Modifier.padding(vertical = 6.dp))
-                FilaMonto("Total", dinero(state.totales.total), destacado = true)
-            }
-        }
-
-        Text("Datos del cliente", style = MaterialTheme.typography.titleMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(Cotizacion.TIPO_EMPRESA, Cotizacion.TIPO_PARTICULAR).forEach { tipo ->
-                FilterChip(
-                    selected = datos.tipoCliente == tipo,
-                    onClick = { datos = datos.copy(tipoCliente = tipo) },
-                    label = { Text(tipo) }
-                )
-            }
-        }
-        Campo(
-            if (esEmpresa) "Razón social" else "Nombre completo",
-            datos.razonSocial
-        ) { datos = datos.copy(razonSocial = it) }
-        Campo(
-            if (esEmpresa) "NIT" else "DUI (opcional)",
-            datos.nit
-        ) { datos = datos.copy(nit = it) }
-        Campo("Persona de contacto", datos.contacto) { datos = datos.copy(contacto = it) }
-        Campo("Teléfono", datos.telefono, KeyboardType.Phone) { datos = datos.copy(telefono = it) }
-        Campo("Correo de contacto", datos.correo, KeyboardType.Email) { datos = datos.copy(correo = it) }
-
-        Text("Tiempo de entrega", style = MaterialTheme.typography.labelLarge)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Cotizacion.TIEMPOS_ENTREGA.forEach { t ->
-                FilterChip(
-                    selected = datos.tiempoEntrega == t,
-                    onClick = { datos = datos.copy(tiempoEntrega = t) },
-                    label = { Text(t) }
-                )
-            }
-        }
-        Text("Validez de la oferta", style = MaterialTheme.typography.labelLarge)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(7, 15, 30).forEach { d ->
-                FilterChip(
-                    selected = datos.validezDias == d,
-                    onClick = { datos = datos.copy(validezDias = d) },
-                    label = { Text("$d días") }
-                )
-            }
-        }
-        OutlinedTextField(
-            value = datos.notas,
-            onValueChange = { datos = datos.copy(notas = it) },
-            label = { Text("Notas (opcional)") },
-            minLines = 2,
-            modifier = Modifier.fillMaxWidth()
+        // ---------- Tipo de cliente ----------
+        SelectorSegmentado(
+            opciones = listOf(Cotizacion.TIPO_EMPRESA, Cotizacion.TIPO_PARTICULAR),
+            seleccion = datos.tipoCliente,
+            onSeleccion = { datos = datos.copy(tipoCliente = it) }
         )
 
+        // ---------- Partidas ----------
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "PARTIDAS DEL LOTE",
+                style = MaterialTheme.typography.labelMedium,
+                color = TsNeutro,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onIrACatalogo, contentPadding = PaddingValues(horizontal = 8.dp)) {
+                Text("+ Agregar más", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+            }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            state.items.forEach { item ->
+                PartidaEditable(
+                    item = item,
+                    onCantidad = { viewModel.cambiarCantidad(item.productoId, it) },
+                    onEliminar = { viewModel.eliminarItem(item.productoId) }
+                )
+            }
+        }
+
+        // ---------- Totales ----------
+        Spacer(Modifier.height(12.dp))
+        CajaSuave {
+            FilaMonto("Subtotal neto", dinero(state.totales.subtotalNeto))
+            if (state.totales.descuento > 0.0) {
+                FilaMonto(
+                    "Ahorro por volumen",
+                    "−" + dinero(state.totales.descuento),
+                    colorValor = TsExitoTexto
+                )
+            }
+            FilaMonto("IVA (13%)", dinero(state.totales.iva))
+            HorizontalDivider(Modifier.padding(vertical = 6.dp), color = TsBorde)
+            FilaMonto("Total", dinero(state.totales.total), destacado = true)
+        }
+
+        // ---------- Datos del cliente ----------
+        Spacer(Modifier.height(16.dp))
+        Campo(if (esEmpresa) "Razón social" else "Nombre completo", datos.razonSocial, Icons.Outlined.Business) {
+            datos = datos.copy(razonSocial = it)
+        }
+        Campo(if (esEmpresa) "NIT / NRC" else "DUI (opcional)", datos.nit, Icons.Outlined.Badge) {
+            datos = datos.copy(nit = it)
+        }
+        Campo("Persona de contacto", datos.contacto, Icons.Outlined.Person) {
+            datos = datos.copy(contacto = it)
+        }
+        Campo("Teléfono / WhatsApp", datos.telefono, Icons.Outlined.Phone, KeyboardType.Phone) {
+            datos = datos.copy(telefono = it)
+        }
+        Campo("Correo de contacto", datos.correo, Icons.Outlined.Email, KeyboardType.Email) {
+            datos = datos.copy(correo = it)
+        }
+
+        // ---------- Entrega y validez ----------
+        EtiquetaCampo("Tiempo de entrega")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Cotizacion.TIEMPOS_ENTREGA.forEach { t ->
+                OpcionChip(t, datos.tiempoEntrega == t) { datos = datos.copy(tiempoEntrega = t) }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        EtiquetaCampo("Validez de la oferta")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(7, 15, 30).forEach { d ->
+                OpcionChip("$d días", datos.validezDias == d) { datos = datos.copy(validezDias = d) }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        EtiquetaCampo("Notas (opcional)")
+        CampoTs(
+            valor = datos.notas,
+            onCambio = { datos = datos.copy(notas = it) },
+            placeholder = "Ej. facturación separada, entrega en dos direcciones…",
+            singleLine = false,
+            minLines = 3
+        )
+
+        Spacer(Modifier.height(16.dp))
         Button(
             onClick = { viewModel.guardarCotizacion(datos) },
             enabled = !state.isSubmitting && !faltanDatos,
-            modifier = Modifier.fillMaxWidth().height(48.dp)
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp)
         ) {
             if (state.isSubmitting) {
-                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = TsSuperficie)
             } else {
-                Text("Enviar cotización")
+                Icon(Icons.AutoMirrored.Filled.Send, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(10.dp))
+                Text("Generar y Enviar Cotización", style = MaterialTheme.typography.titleSmall)
             }
         }
         if (faltanDatos) {
             Text(
                 "Completa los datos del cliente para enviar.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = TsNeutro,
+                modifier = Modifier.padding(top = 6.dp)
             )
         }
     }
@@ -231,17 +307,37 @@ private fun CotizacionActual(
 private fun Campo(
     etiqueta: String,
     valor: String,
+    icono: androidx.compose.ui.graphics.vector.ImageVector,
     teclado: KeyboardType = KeyboardType.Text,
     onCambio: (String) -> Unit
 ) {
-    OutlinedTextField(
-        value = valor,
-        onValueChange = onCambio,
-        label = { Text(etiqueta) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = teclado),
-        modifier = Modifier.fillMaxWidth()
+    EtiquetaCampo(etiqueta)
+    CampoTs(
+        valor = valor,
+        onCambio = onCambio,
+        placeholder = etiqueta,
+        leadingIcon = icono,
+        keyboardOptions = KeyboardOptions(keyboardType = teclado)
     )
+    Spacer(Modifier.height(12.dp))
+}
+
+@Composable
+private fun OpcionChip(texto: String, activo: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(10.dp),
+        color = if (activo) TsAzulSuave else TsSuperficieSuave,
+        border = if (activo) androidx.compose.foundation.BorderStroke(1.5.dp, TsPrimario) else null
+    ) {
+        Text(
+            texto,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (activo) FontWeight.Bold else FontWeight.Medium,
+            color = if (activo) TsPrimario else TsNeutro,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        )
+    }
 }
 
 @Composable
@@ -250,131 +346,145 @@ private fun PartidaEditable(
     onCantidad: (Int) -> Unit,
     onEliminar: () -> Unit
 ) {
-    ElevatedCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.Top) {
-                Column(Modifier.weight(1f)) {
-                    Text(item.nombreMostrado, style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        item.skuMostrado,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                IconButton(onClick = onEliminar) {
-                    Icon(Icons.Default.Delete, contentDescription = "Quitar")
-                }
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(TsSuperficieSuave)
+            .padding(start = 12.dp, top = 8.dp, bottom = 8.dp, end = 4.dp)
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f).padding(top = 4.dp)) {
+                Text(
+                    item.nombreMostrado,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TsSecundario,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(item.skuMostrado, style = MaterialTheme.typography.labelSmall, color = TsNeutro)
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { onCantidad(item.cantidad - 1) }) {
-                    Icon(Icons.Default.Remove, contentDescription = "Menos")
-                }
-                Text("${item.cantidad}", style = MaterialTheme.typography.titleMedium)
-                IconButton(onClick = { onCantidad(item.cantidad + 1) }) {
-                    Icon(Icons.Default.Add, contentDescription = "Más")
-                }
-                Spacer(Modifier.weight(1f))
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(dinero(item.subtotalMostrado), style = MaterialTheme.typography.titleSmall)
-                    val conDescuento = item.precioBase > item.precioUnitario
-                    Text(
-                        "${dinero(item.precioUnitario)} c/u" + if (conDescuento) " (precio volumen)" else "",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (conDescuento) MaterialTheme.colorScheme.tertiary
-                        else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            IconButton(onClick = onEliminar) {
+                Icon(Icons.Outlined.DeleteOutline, contentDescription = "Quitar", tint = TsNeutro)
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { onCantidad(item.cantidad - 1) }, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.Remove, contentDescription = "Menos", tint = TsSecundario)
+            }
+            Text("${item.cantidad}", style = MaterialTheme.typography.titleSmall)
+            IconButton(onClick = { onCantidad(item.cantidad + 1) }, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.Add, contentDescription = "Más", tint = TsSecundario)
+            }
+            Spacer(Modifier.weight(1f))
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(end = 8.dp)) {
+                Text(
+                    dinero(item.subtotalMostrado),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = TsSecundario
+                )
+                val conDescuento = item.precioBase > item.precioUnitario
+                Text(
+                    "${dinero(item.precioUnitario)} c/u" + if (conDescuento) " · volumen" else "",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (conDescuento) TsExitoTexto else TsNeutro
+                )
             }
         }
     }
 }
 
 // ---------------------------------------------------------------------------
-// Pestaña 2: historial (incluye las creadas en la web)
+// Cotizaciones registradas (incluye las creadas en la web)
 // ---------------------------------------------------------------------------
-
-@Composable
-private fun MisCotizaciones(state: CartUiState) {
-    when {
-        state.cargandoCotizaciones && state.misCotizaciones.isEmpty() -> Box(
-            Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) { CircularProgressIndicator() }
-
-        state.misCotizaciones.isEmpty() -> MensajeVacio("Aún no tienes cotizaciones.")
-
-        else -> LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            items(state.misCotizaciones, key = { it.id.ifBlank { it.folio } }) { cot ->
-                TarjetaCotizacion(cot)
-            }
-        }
-    }
-}
 
 @Composable
 private fun TarjetaCotizacion(cot: Cotizacion) {
     var abierta by remember { mutableStateOf(false) }
 
-    ElevatedCard(
-        Modifier
-            .fillMaxWidth()
-            .clickable { abierta = !abierta }
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    cot.folio,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.weight(1f)
-                )
-                EstadoChip(cot.estado)
-            }
+    TarjetaTs(Modifier.fillMaxWidth(), onClick = { abierta = !abierta }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "${cot.fecha} · ${cot.items.size} partida(s)",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                "#${cot.folio}",
+                style = MaterialTheme.typography.titleSmall,
+                fontFamily = FuenteMono,
+                fontWeight = FontWeight.Bold,
+                color = TsSecundario,
+                modifier = Modifier.weight(1f)
             )
-            if (cot.vencimiento.isNotBlank()) {
-                Text(
-                    "Vence: ${cot.vencimiento}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            FilaMonto("Total", dinero(cot.total), destacado = true)
+            EstadoChip(cot.estado)
+        }
+        Text(
+            "Cliente: ${cot.razonSocial}",
+            style = MaterialTheme.typography.bodySmall,
+            color = TsNeutro,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(Modifier.height(10.dp))
 
+        CajaSuave {
             if (abierta) {
-                HorizontalDivider(Modifier.padding(vertical = 8.dp))
                 cot.items.forEach { item ->
-                    FilaMonto(
-                        "${item.cantidad} × ${item.nombreMostrado}",
-                        dinero(item.subtotalMostrado)
-                    )
+                    FilaMonto("${item.cantidad} × ${item.nombreMostrado}", dinero(item.subtotalMostrado))
                 }
-                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(Modifier.padding(vertical = 6.dp), color = TsBorde)
                 FilaMonto("Subtotal neto", dinero(cot.subtotalNeto))
-                if (cot.descuento > 0.0) FilaMonto("Ahorro por volumen", "−" + dinero(cot.descuento))
+                if (cot.descuento > 0.0) {
+                    FilaMonto("Ahorro por volumen", "−" + dinero(cot.descuento), colorValor = TsExitoTexto)
+                }
                 FilaMonto("IVA (13%)", dinero(cot.iva))
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "${cot.razonSocial} · ${cot.tiempoEntrega}",
-                    style = MaterialTheme.typography.bodySmall
-                )
+                if (cot.tiempoEntrega.isNotBlank()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text("Entrega: ${cot.tiempoEntrega}", style = MaterialTheme.typography.bodySmall, color = TsNeutro)
+                }
                 if (cot.notas.isNotBlank()) {
-                    Text("Notas: ${cot.notas}", style = MaterialTheme.typography.bodySmall)
+                    Text("Notas: ${cot.notas}", style = MaterialTheme.typography.bodySmall, color = TsNeutro)
                 }
             } else {
                 Text(
-                    "Toca para ver el detalle",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
+                    cot.items.joinToString(" + ") { "${it.cantidad}x ${it.nombreMostrado}" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TsSecundario,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
+            Spacer(Modifier.height(8.dp))
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                Text("Total", style = MaterialTheme.typography.labelSmall, color = TsNeutro)
+                Text(
+                    dinero(cot.total),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = TsSecundario
+                )
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.Schedule, null, tint = TsNeutro, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(
+                buildString {
+                    append(cot.fecha)
+                    // "15 nov 2026 (en 8 días)" -> "15 nov 2026"; la web puede guardar "Vigencia 8 días"
+                    if (cot.vencimiento.isNotBlank()) append("  ·  Vence: ${cot.vencimiento.substringBefore(" (")}")
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = TsNeutro,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                if (abierta) "Ocultar" else "Ver detalle",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color = TsPrimario
+            )
         }
     }
 }
