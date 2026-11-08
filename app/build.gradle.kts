@@ -41,6 +41,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.runtime.saveable)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -75,4 +76,11 @@ dependencies {
     // Firebase Storage para subida de adjuntos (RFQ y RMA)
     implementation("com.google.firebase:firebase-storage-ktx")
 
+    // Firebase Auth (la versión la gestiona el BoM)
+    implementation("com.google.firebase:firebase-auth-ktx")
+
+    // ViewModel y collectAsStateWithLifecycle para Compose
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 }

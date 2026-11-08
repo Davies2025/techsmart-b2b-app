@@ -12,6 +12,11 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     data object Catalog : Screen("catalog", "Catálogo", Icons.Default.List)
     data object Cart : Screen("cart", "Cotizaciones", Icons.Default.ShoppingCart)
     data object Rma : Screen("rma", "Reclamos", Icons.Default.Build)
+
+    object AuthRoutes {
+        const val LOGIN = "login"
+        const val REGISTER = "register"
+    }
 }
 
 val bottomNavItems = listOf(
