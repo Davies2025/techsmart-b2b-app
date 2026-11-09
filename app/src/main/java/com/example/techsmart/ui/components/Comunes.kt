@@ -1,129 +1,290 @@
 package com.example.techsmart.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.techsmart.R
 import com.example.techsmart.ui.theme.*
 import java.util.Locale
 
 /** "$1,234.50" (el dólar es la moneda de El Salvador). */
 fun dinero(valor: Double): String = String.format(Locale.US, "$%,.2f", valor)
 
-// ---------------------------------------------------------------------------
-// Marca
-// ---------------------------------------------------------------------------
-
-/** Logo de Techsmart: cuadro azul con una "T" y un punto cian. */
 @Composable
-fun LogoTechsmart(tamano: Dp = 40.dp, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(tamano)
-            .clip(RoundedCornerShape(tamano * 0.28f))
-            .background(TsPrimario),
-        contentAlignment = Alignment.Center
+fun LogoTechsmart(tamano: Dp = 42.dp, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(tamano * 0.30f),
+        color = Color.White,
+        shadowElevation = 2.dp,
+        border = BorderStroke(1.dp, TsPrimario.copy(alpha = 0.18f)),
+        modifier = modifier.size(tamano)
     ) {
-        Text(
-            "T",
-            color = Color.White,
-            fontWeight = FontWeight.Black,
-            fontSize = (tamano.value * 0.55f).sp
-        )
-        Box(
-            Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = tamano * 0.2f, bottom = tamano * 0.22f)
-                .size(tamano * 0.16f)
-                .clip(CircleShape)
-                .background(TsTerciario)
+        Image(
+            painter = painterResource(id = R.drawable.techsmart_app_img),
+            contentDescription = "Logo Techsmart",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(tamano * 0.30f))
+                .scale(1.15f)
         )
     }
 }
 
-/**
- * Barra superior común: logo, "Techsmart", subtítulo de la sección y botón de cuenta.
- * El menú de cuenta muestra el correo de la sesión y la opción de cerrar sesión.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BarraSuperiorTechsmart(
     subtitulo: String,
-    correoSesion: String?,
-    onCerrarSesion: () -> Unit
+    correoSesion: String? = null,
+    onCerrarSesion: (() -> Unit)? = null
 ) {
     var menuAbierto by remember { mutableStateOf(false) }
+    val cianPulso = Color(0xFF00C2FF)
+    val verdeEnLinea = Color(0xFF0A876C)
 
-    Surface(color = TsSuperficie, shadowElevation = 1.dp) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            LogoTechsmart(36.dp)
-            Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    "Techsmart",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = TsSecundario
-                )
-                Text(
-                    subtitulo,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TsNeutro
-                )
-            }
-            Box {
-                FilledIconButton(
-                    onClick = { menuAbierto = true },
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = TsPrimario)
+    val inicialUsuario = remember(correoSesion) {
+        correoSesion?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
+    }
+
+    Surface(
+        color = TsSuperficie,
+        shadowElevation = 3.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 18.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Outlined.Person, contentDescription = "Mi cuenta", tint = Color.White)
-                }
-                DropdownMenu(expanded = menuAbierto, onDismissRequest = { menuAbierto = false }) {
-                    if (!correoSesion.isNullOrBlank()) {
+                    LogoTechsmart(tamano = 42.dp)
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Techsmart",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TsSecundario
+                            )
+                            Spacer(Modifier.width(5.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(TsPrimario)
+                            )
+                        }
+
                         Text(
-                            "Sesión iniciada como",
+                            text = subtitulo,
                             style = MaterialTheme.typography.labelSmall,
-                            color = TsNeutro,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                            fontWeight = FontWeight.SemiBold,
+                            color = TsPrimario
                         )
-                        Text(
-                            correoSesion,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                        HorizontalDivider(Modifier.padding(vertical = 8.dp))
                     }
-                    DropdownMenuItem(
-                        text = { Text("Cerrar sesión", color = TsErrorTexto) },
-                        leadingIcon = {
-                            Icon(Icons.AutoMirrored.Filled.Logout, null, tint = TsErrorTexto)
-                        },
-                        onClick = { menuAbierto = false; onCerrarSesion() }
-                    )
+                }
+
+                if (onCerrarSesion != null) {
+                    Box {
+                        Surface(
+                            onClick = { menuAbierto = true },
+                            shape = RoundedCornerShape(50),
+                            color = TsPrimario.copy(alpha = 0.07f),
+                            border = BorderStroke(1.dp, TsPrimario.copy(alpha = 0.18f))
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(start = 5.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+                            ) {
+                                Box(modifier = Modifier.size(32.dp)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(CircleShape)
+                                            .background(
+                                                Brush.linearGradient(
+                                                    colors = listOf(TsPrimario, Color(0xFF00227B))
+                                                )
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = inicialUsuario,
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color.White
+                                        )
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .align(Alignment.BottomEnd)
+                                            .clip(CircleShape)
+                                            .background(verdeEnLinea)
+                                            .border(1.5.dp, Color.White, CircleShape)
+                                    )
+                                }
+
+                                Spacer(Modifier.width(4.dp))
+
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Abrir menú de usuario",
+                                    tint = TsSecundario,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = menuAbierto,
+                            onDismissRequest = { menuAbierto = false },
+                            shape = RoundedCornerShape(18.dp),
+                            containerColor = TsSuperficie,
+                            tonalElevation = 4.dp,
+                            shadowElevation = 8.dp,
+                            modifier = Modifier.width(250.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(TsPrimario.copy(alpha = 0.12f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = inicialUsuario,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = TsPrimario
+                                        )
+                                    }
+
+                                    Spacer(Modifier.width(10.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(6.dp)
+                                                    .clip(CircleShape)
+                                                    .background(verdeEnLinea)
+                                            )
+                                            Spacer(Modifier.width(5.dp))
+                                            Text(
+                                                text = "Sesión activa",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = verdeEnLinea
+                                            )
+                                        }
+                                        if (!correoSesion.isNullOrBlank()) {
+                                            Text(
+                                                text = correoSesion,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = TsSecundario,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(Modifier.height(12.dp))
+                                HorizontalDivider(color = TsNeutro.copy(alpha = 0.15f))
+                                Spacer(Modifier.height(10.dp))
+
+                                Surface(
+                                    onClick = {
+                                        menuAbierto = false
+                                        onCerrarSesion()
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.55f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center,
+                                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                            contentDescription = "Cerrar sesión",
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            text = "Cerrar sesión",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.5.dp)
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                TsPrimario.copy(alpha = 0.35f),
+                                cianPulso.copy(alpha = 0.45f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
         }
     }
 }
@@ -132,7 +293,6 @@ fun BarraSuperiorTechsmart(
 // Contenedores
 // ---------------------------------------------------------------------------
 
-/** Tarjeta blanca con borde suave, la base de casi todos los bloques del diseño. */
 @Composable
 fun TarjetaTs(
     modifier: Modifier = Modifier,
@@ -142,37 +302,56 @@ fun TarjetaTs(
     val forma = RoundedCornerShape(20.dp)
     val borde = BorderStroke(1.dp, TsBorde)
     val colores = CardDefaults.cardColors(containerColor = TsSuperficie)
+    val elevacion = CardDefaults.cardElevation(defaultElevation = 2.dp)
+
     if (onClick != null) {
-        Card(onClick = onClick, modifier = modifier, shape = forma, border = borde, colors = colores) {
+        Card(
+            onClick = onClick,
+            modifier = modifier,
+            shape = forma,
+            border = borde,
+            colors = colores,
+            elevation = elevacion
+        ) {
             Column(Modifier.padding(16.dp), content = contenido)
         }
     } else {
-        Card(modifier = modifier, shape = forma, border = borde, colors = colores) {
+        Card(
+            modifier = modifier,
+            shape = forma,
+            border = borde,
+            colors = colores,
+            elevation = elevacion
+        ) {
             Column(Modifier.padding(16.dp), content = contenido)
         }
     }
 }
 
-/** Caja gris clara dentro de una tarjeta (resúmenes, descripciones). */
 @Composable
 fun CajaSuave(modifier: Modifier = Modifier, contenido: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(TsSuperficieSuave)
+            .border(1.dp, TsBorde.copy(alpha = 0.6f), RoundedCornerShape(14.dp))
             .padding(12.dp),
         content = contenido
     )
 }
 
-/** Ícono dentro de un cuadro azul claro (encabezados de tarjetas). */
 @Composable
-fun IconoEnCaja(icono: ImageVector, tamano: Dp = 44.dp, fondo: Color = TsAzulSuave, tinte: Color = TsPrimario) {
+fun IconoEnCaja(
+    icono: ImageVector,
+    tamano: Dp = 44.dp,
+    fondo: Color = TsAzulSuave,
+    tinte: Color = TsPrimario
+) {
     Box(
         Modifier
             .size(tamano)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(13.dp))
             .background(fondo),
         contentAlignment = Alignment.Center
     ) {
@@ -180,46 +359,59 @@ fun IconoEnCaja(icono: ImageVector, tamano: Dp = 44.dp, fondo: Color = TsAzulSua
     }
 }
 
-/**
- * Banner azul claro de la cabecera de cada sección
- * (p. ej. "Cotizador B2B & Express", "Garantía Techsmart Oficial").
- */
 @Composable
-fun BannerSeccion(icono: ImageVector, titulo: String, descripcion: String, etiqueta: String? = null) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(TsAzulSuave)
-            .padding(16.dp),
-        verticalAlignment = Alignment.Top
+fun BannerSeccion(
+    icono: ImageVector,
+    titulo: String,
+    descripcion: String,
+    etiqueta: String? = null
+) {
+    Surface(
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, TsPrimario.copy(alpha = 0.18f)),
+        shadowElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        IconoEnCaja(icono, fondo = TsPrimario, tinte = Color.White)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    titulo,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = TsSecundario,
-                    modifier = Modifier.weight(1f, fill = false)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(TsAzulSuave, Color.White)
+                    )
                 )
-                if (etiqueta != null) {
-                    Spacer(Modifier.width(8.dp))
-                    EtiquetaMono(etiqueta)
+                .padding(16.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            IconoEnCaja(icono, fondo = TsPrimario, tinte = Color.White)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        titulo,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TsSecundario,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (etiqueta != null) {
+                        Spacer(Modifier.width(8.dp))
+                        EtiquetaMono(etiqueta)
+                    }
                 }
+                Spacer(Modifier.height(4.dp))
+                Text(descripcion, style = MaterialTheme.typography.bodySmall, color = TsNeutro)
             }
-            Spacer(Modifier.height(4.dp))
-            Text(descripcion, style = MaterialTheme.typography.bodySmall, color = TsNeutro)
         }
     }
 }
 
-/** Encabezado de lista: ícono + título + contador ("3 EN CURSO"). */
 @Composable
 fun EncabezadoSeccion(icono: ImageVector, titulo: String, contador: String? = null) {
     Row(
-        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icono, contentDescription = null, tint = TsPrimario, modifier = Modifier.size(22.dp))
@@ -227,6 +419,7 @@ fun EncabezadoSeccion(icono: ImageVector, titulo: String, contador: String? = nu
         Text(
             titulo,
             style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold,
             color = TsSecundario,
             modifier = Modifier.weight(1f)
         )
@@ -238,13 +431,13 @@ fun EncabezadoSeccion(icono: ImageVector, titulo: String, contador: String? = nu
 // Etiquetas
 // ---------------------------------------------------------------------------
 
-/** Etiqueta pequeña en monoespaciada sobre fondo azul claro ("SLA 48H", "3 EN CURSO"). */
 @Composable
 fun EtiquetaMono(texto: String, fondo: Color = TsInfoFondo, color: Color = TsInfoTexto) {
     Surface(color = fondo, shape = RoundedCornerShape(50)) {
         Text(
             texto.uppercase(),
             style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
             color = color,
             maxLines = 1,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
@@ -252,20 +445,23 @@ fun EtiquetaMono(texto: String, fondo: Color = TsInfoFondo, color: Color = TsInf
     }
 }
 
-/** Colores (fondo, texto) para cada estado de cotización o reclamo. */
 fun coloresEstado(estado: String): Pair<Color, Color> = when (estado) {
     "Aprobada", "Despachada", "Entregada", "Cambio Aprobado", "Cerrado" -> TsExitoFondo to TsExitoTexto
     "Cancelada" -> TsErrorFondo to TsErrorTexto
     "Pendiente de Pago", "En Bodega", "Recibido en Bodega", "En Diagnóstico Técnico" ->
         TsAvisoFondo to TsAvisoTexto
-    else -> TsInfoFondo to TsInfoTexto // "En Revisión", "Reportado"
+    else -> TsInfoFondo to TsInfoTexto
 }
 
-/** Chip de estado con punto de color ("● En Revisión"). */
 @Composable
 fun EstadoChip(estado: String, modifier: Modifier = Modifier) {
     val (fondo, texto) = coloresEstado(estado)
-    Surface(color = fondo, shape = RoundedCornerShape(50), modifier = modifier) {
+    Surface(
+        color = fondo,
+        shape = RoundedCornerShape(50),
+        border = BorderStroke(1.dp, texto.copy(alpha = 0.2f)),
+        modifier = modifier
+    ) {
         Row(
             Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -287,8 +483,6 @@ fun EstadoChip(estado: String, modifier: Modifier = Modifier) {
 // ---------------------------------------------------------------------------
 // Varios
 // ---------------------------------------------------------------------------
-
-/** Fila "Etiqueta ........ valor" para desgloses. */
 @Composable
 fun FilaMonto(
     etiqueta: String,
@@ -315,30 +509,30 @@ fun FilaMonto(
     }
 }
 
-/** Texto para listas vacías o estados de carga. */
 @Composable
 fun MensajeVacio(texto: String, modifier: Modifier = Modifier) {
     Text(
         texto,
         style = MaterialTheme.typography.bodyMedium,
         color = TsNeutro,
-        modifier = modifier.padding(24.dp)
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(24.dp)
     )
 }
 
-/** Etiqueta de campo de formulario (texto pequeño en gris sobre el campo). */
 @Composable
 fun EtiquetaCampo(texto: String) {
     Text(
         texto,
         style = MaterialTheme.typography.bodySmall,
-        fontWeight = FontWeight.Medium,
-        color = TsNeutro,
+        fontWeight = FontWeight.SemiBold,
+        color = TsSecundario,
         modifier = Modifier.padding(bottom = 6.dp)
     )
 }
 
-/** Campo de texto con el estilo del diseño: relleno gris claro y sin borde. */
 @Composable
 fun CampoTs(
     valor: String,
@@ -348,18 +542,17 @@ fun CampoTs(
     leadingIcon: ImageVector? = null,
     singleLine: Boolean = true,
     minLines: Int = 1,
-    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions =
-        androidx.compose.foundation.text.KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
     TextField(
         value = valor,
         onValueChange = onCambio,
         placeholder = { Text(placeholder, color = TsNeutro.copy(alpha = 0.7f)) },
-        leadingIcon = leadingIcon?.let { { Icon(it, null, tint = TsNeutro) } },
+        leadingIcon = leadingIcon?.let { { Icon(it, null, tint = TsPrimario) } },
         singleLine = singleLine,
         minLines = minLines,
         keyboardOptions = keyboardOptions,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = TsSuperficieSuave,
             unfocusedContainerColor = TsSuperficieSuave,
@@ -368,11 +561,13 @@ fun CampoTs(
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent
         ),
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .border(1.dp, TsBorde, RoundedCornerShape(14.dp))
     )
 }
 
-/** Selector de dos o más opciones en una barra (p. ej. Empresa / Particular). */
+/** Selector de dos o más opciones en una barra */
 @Composable
 fun SelectorSegmentado(
     opciones: List<String>,
@@ -383,8 +578,9 @@ fun SelectorSegmentado(
     Row(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(TsSuperficieSuave)
+            .border(1.dp, TsBorde, RoundedCornerShape(14.dp))
             .padding(4.dp)
     ) {
         opciones.forEach { opcion ->
@@ -393,6 +589,7 @@ fun SelectorSegmentado(
                 onClick = { onSeleccion(opcion) },
                 color = if (activa) TsPrimario else Color.Transparent,
                 shape = RoundedCornerShape(10.dp),
+                shadowElevation = if (activa) 2.dp else 0.dp,
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
@@ -403,7 +600,7 @@ fun SelectorSegmentado(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(vertical = 10.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center
                 )
             }
         }

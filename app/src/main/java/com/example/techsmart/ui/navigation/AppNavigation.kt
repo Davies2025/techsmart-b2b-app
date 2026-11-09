@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -110,11 +111,11 @@ fun AppNavigation(
                             },
                             selected = seleccionada,
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = TsPrimario,
+                                selectedIconColor = Color.White,
                                 selectedTextColor = TsPrimario,
-                                indicatorColor = TsAzulSuave,
-                                unselectedIconColor = TsNeutro,
-                                unselectedTextColor = TsNeutro
+                                indicatorColor = TsPrimario,
+                                unselectedIconColor = TsNeutro.copy(alpha = 0.6f),
+                                unselectedTextColor = TsNeutro.copy(alpha = 0.6f)
                             ),
                             onClick = {
                                 // Desde el flujo de compra, "Cotizaciones" vuelve a la lista
