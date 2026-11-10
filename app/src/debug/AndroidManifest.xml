@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Solo para compilaciones debug: permite HTTP sin cifrar para probar el Asesor IA
+    contra el servidor local de la web (http://10.0.2.2:3000 en el emulador o la IP de la PC
+    en un teléfono). La versión release solo acepta HTTPS (por ejemplo, un túnel de Cloudflare).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application android:usesCleartextTraffic="true" />
+
+</manifest>

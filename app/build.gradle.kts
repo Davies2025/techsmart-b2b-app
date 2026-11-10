@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -18,6 +20,16 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // URL del Asesor IA (endpoint /api/chat de la web).
+        // Se cambia en local.properties con: chat.api.url=http://192.168.1.25:3000/api/chat
+        // Por defecto 10.0.2.2 = la computadora anfitriona vista desde el emulador.
+        val propiedadesLocales = Properties().apply {
+            val archivo = rootProject.file("local.properties")
+            if (archivo.exists()) archivo.inputStream().use { load(it) }
+        }
+        val urlChat = propiedadesLocales.getProperty("chat.api.url", "http://10.0.2.2:3000/api/chat")
+        buildConfigField("String", "CHAT_API_URL", "\"$urlChat\"")
     }
 
     buildTypes {
@@ -34,6 +46,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
