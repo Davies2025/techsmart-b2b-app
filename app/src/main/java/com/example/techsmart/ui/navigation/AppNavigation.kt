@@ -20,6 +20,7 @@ import com.example.techsmart.ui.auth.LoginScreen
 import com.example.techsmart.ui.auth.RegisterScreen
 import com.example.techsmart.ui.cart.CartScreen
 import com.example.techsmart.ui.cart.CartViewModel
+import com.example.techsmart.ui.auth.RecuperarPasswordScreen
 import com.example.techsmart.ui.chat.ChatSheet
 import com.example.techsmart.ui.chat.ChatViewModel
 import com.example.techsmart.ui.catalog.CatalogScreen
@@ -158,7 +159,9 @@ fun AppNavigation(
                             popUpTo(Screen.AuthRoutes.LOGIN) { inclusive = true }
                         }
                     },
-                    onGoToRegister = { navController.navigate(Screen.AuthRoutes.REGISTER) }
+                    onGoToRegister = { navController.navigate(Screen.AuthRoutes.REGISTER) },
+
+                    onRecuperarPasswordClick = { navController.navigate("recuperar_password") }
                 )
             }
             composable(Screen.AuthRoutes.REGISTER) {
@@ -169,6 +172,14 @@ fun AppNavigation(
                         }
                     },
                     onBackToLogin = { navController.popBackStack() }
+                )
+            }
+
+            composable("recuperar_password") {
+                val authViewModel: com.example.techsmart.ui.auth.AuthViewModel = viewModel()
+                RecuperarPasswordScreen(
+                    viewModel = authViewModel,
+                    onVolver = { navController.popBackStack() }
                 )
             }
 
