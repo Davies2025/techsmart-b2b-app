@@ -70,9 +70,13 @@ fun PedidoScreen(
     onVerCotizaciones: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) { viewModel.observarMisCotizaciones() }
+    LaunchedEffect(Unit) {
+        viewModel.observarMisCotizaciones()
+        viewModel.observarMisPagos()
+    }
 
     val pedido = state.misCotizaciones.find { it.folio == folio }
+    val pago = state.misPagos.find { it.pedidoId == pedido?.id || it.folioPedido == folio }
 
     if (pedido == null) {
         Box(Modifier.fillMaxSize().background(TsFondo), contentAlignment = Alignment.Center) {
@@ -183,6 +187,9 @@ fun PedidoScreen(
                 )
             }
         }
+
+        // ---------- Comprobante del pago (colección 'pagos') ----------
+        if (pago != null) ComprobantePago(pago)
 
         // ---------- Rastreo ----------
         if (!cancelado) Rastreo(pasoActual(pedido.estado))
@@ -327,6 +334,43 @@ private fun Rastreo(actual: Int) {
             else "El estado lo actualiza el equipo de Techsmart; esta pantalla se actualiza sola.",
             style = MaterialTheme.typography.bodySmall,
             color = TsNeutro
+        )
+    }
+}
+
+/** Comprobante del pago guardado en Firestore ('pagos'), enlazado a este pedido. */
+@Composable
+private fun ComprobantePago(pago: com.example.techsmart.data.model.Pago) {
+    val aprobado = pago.estado == com.example.techsmart.data.model.Pago.ESTADO_APROBADO
+    TarjetaTs(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.CreditCard, null, tint = TsPrimario)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "Comprobante de pago",
+                style = MaterialTheme.typography.titleMedium,
+                color = TsSecundario,
+                modifier = Modifier.weight(1f)
+            )
+            EtiquetaMono(
+                pago.estado,
+                fondo = if (aprobado) TsExitoFondo else TsAvisoFondo,
+                color = if (aprobado) TsExitoTexto else TsAvisoTexto
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        CajaSuave {
+            FilaMonto("No. de comprobante", pago.id.take(8).uppercase())
+            FilaMonto("Método", pago.referencia)
+            FilaMonto("Fecha", (pago.fecha + " " + pago.hora).trim())
+            FilaMonto("Monto pagado", dinero(pago.monto), destacado = true)
+        }
+        Text(
+            if (aprobado) "Pago registrado en tu cuenta."
+            else "Se confirmará al recibir tu transferencia.",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (aprobado) TsExitoTexto else TsAvisoTexto,
+            modifier = Modifier.padding(top = 8.dp)
         )
     }
 }

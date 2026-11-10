@@ -2,6 +2,7 @@ package com.example.techsmart.data.repository
 
 import android.net.Uri
 import com.example.techsmart.data.model.Cotizacion
+import com.example.techsmart.data.model.Pago
 import com.example.techsmart.data.model.Producto
 import com.example.techsmart.data.model.TicketRMA
 import com.example.techsmart.data.model.Usuario
@@ -103,6 +104,78 @@ class TechsmartRepository(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    /**
+     * Registra una compra y su pago en UNA sola operación (batch):
+     * - 'cotizaciones/{id}': el pedido, con método de pago y estado.
+     * - 'pagos/{id}': el comprobante del pago, enlazado al pedido por pedidoId.
+     * Si algo falla no se guarda ninguno de los dos. Devuelve el folio del pedido.
+     */
+    suspend fun registrarCompra(compra: Cotizacion, pago: Pago): Result<String> {
+        val usuarioCorreo = correoSesion()
+            ?: return Result.failure(sinSesion("realizar una compra"))
+
+        return try {
+            val pedidoRef = db.collection("cotizaciones").document()
+            val pagoRef = db.collection("pagos").document()
+            val folio = compra.folio.ifBlank { "B2B-${(1000..9999).random()}" }
+            val fecha = compra.fecha.ifBlank { Fechas.hoy() }
+
+            val pedidoFinal = compra.copy(
+                id = pedidoRef.id,
+                folio = folio,
+                fecha = fecha,
+                vencimiento = compra.vencimiento.ifBlank { Fechas.vencimientoEnDias(compra.validezDias) },
+                usuarioCorreo = usuarioCorreo,
+                createdAt = null
+            )
+            val pagoFinal = pago.copy(
+                id = pagoRef.id,
+                pedidoId = pedidoRef.id,
+                folioPedido = folio,
+                usuarioCorreo = usuarioCorreo,
+                fecha = pago.fecha.ifBlank { fecha },
+                createdAt = null
+            )
+
+            db.batch()
+                .set(pedidoRef, pedidoFinal)
+                .set(pagoRef, pagoFinal)
+                .commit()
+                .await()
+            Result.success(folio)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Pagos de la cuenta con sesión iniciada, del más reciente al más antiguo
+    fun getMisPagos(): Flow<Result<List<Pago>>> = callbackFlow {
+        val usuarioCorreo = correoSesion()
+        if (usuarioCorreo == null) {
+            trySend(Result.success(emptyList()))
+            close()
+            return@callbackFlow
+        }
+
+        val listener = db.collection("pagos")
+            .whereEqualTo("usuarioCorreo", usuarioCorreo)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val pagos = snapshot.documents
+                        .sortedByDescending { it.marcaDeTiempo() }
+                        .mapNotNull { doc -> doc.toObject(Pago::class.java)?.apply { id = doc.id } }
+                    trySend(Result.success(pagos))
+                }
+            }
+        awaitClose { listener.remove() }
     }
 
     // Cotizaciones de la cuenta con sesión iniciada, de la más reciente a la más antigua

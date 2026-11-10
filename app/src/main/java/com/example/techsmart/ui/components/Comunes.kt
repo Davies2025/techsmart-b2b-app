@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -64,7 +65,9 @@ fun BarraSuperiorTechsmart(
     correoSesion: String? = null,
     onCerrarSesion: (() -> Unit)? = null,
     // Asesor IA: el botón aparece en todas las vistas que usan esta barra
-    onAbrirChat: (() -> Unit)? = null
+    onAbrirChat: (() -> Unit)? = null,
+    // "Mi historial" en el menú de la cuenta (compras, cotizaciones y pagos)
+    onAbrirHistorial: (() -> Unit)? = null
 ) {
     var menuAbierto by remember { mutableStateOf(false) }
     val cianPulso = Color(0xFF00C2FF)
@@ -267,6 +270,38 @@ fun BarraSuperiorTechsmart(
                                 Spacer(Modifier.height(12.dp))
                                 HorizontalDivider(color = TsNeutro.copy(alpha = 0.15f))
                                 Spacer(Modifier.height(10.dp))
+
+                                if (onAbrirHistorial != null) {
+                                    Surface(
+                                        onClick = {
+                                            menuAbierto = false
+                                            onAbrirHistorial()
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = TsPrimario.copy(alpha = 0.08f),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.History,
+                                                contentDescription = null,
+                                                tint = TsPrimario,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                text = "Mi historial",
+                                                style = MaterialTheme.typography.labelLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = TsPrimario
+                                            )
+                                        }
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                }
 
                                 Surface(
                                     onClick = {

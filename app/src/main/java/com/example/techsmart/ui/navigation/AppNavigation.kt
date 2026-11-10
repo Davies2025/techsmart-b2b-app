@@ -30,6 +30,7 @@ import com.example.techsmart.ui.compra.CheckoutScreen
 import com.example.techsmart.ui.compra.PedidoScreen
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.techsmart.ui.historial.HistorialScreen
 import com.example.techsmart.ui.home.HomeScreen
 import com.example.techsmart.ui.rma.RmaScreen
 import com.example.techsmart.ui.rma.RmaViewModel
@@ -59,7 +60,7 @@ fun AppNavigation(
     val currentRoute = navBackStackEntry?.destination?.route
 
     // Barras superior e inferior solo en las pantallas principales (no en login/registro)
-    val pantallaActual = (bottomNavItems + pantallasCompra).find { it.route == currentRoute }
+    val pantallaActual = (bottomNavItems + pantallasCompra + Screen.Historial).find { it.route == currentRoute }
     val enCompra = pantallasCompra.any { it.route == currentRoute }
 
     val irA: (Screen) -> Unit = { screen ->
@@ -92,7 +93,10 @@ fun AppNavigation(
                     subtitulo = pantallaActual.subtitulo,
                     correoSesion = authRepo.currentEmail,
                     onCerrarSesion = cerrarSesion,
-                    onAbrirChat = { chatAbierto = true }
+                    onAbrirChat = { chatAbierto = true },
+                    onAbrirHistorial = {
+                        if (currentRoute != Screen.Historial.route) navController.navigate(Screen.Historial.route)
+                    }
                 )
             }
         },
@@ -229,6 +233,12 @@ fun AppNavigation(
                         }
                     },
                     onVerCotizaciones = { navController.popBackStack(Screen.Cart.route, inclusive = false) }
+                )
+            }
+            composable(Screen.Historial.route) {
+                HistorialScreen(
+                    viewModel = cartViewModel,
+                    onVerPedido = { folio -> navController.navigate(Screen.Pedido.ruta(folio)) }
                 )
             }
             composable(Screen.Rma.route) {
