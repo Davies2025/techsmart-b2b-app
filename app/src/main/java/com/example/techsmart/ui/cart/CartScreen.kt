@@ -931,7 +931,26 @@ private fun TarjetaCotizacion(cot: Cotizacion, onVerPedido: (String) -> Unit) {
                         }
                     }
 
-                    EstadoChip(cot.estado)
+                    // CAMBIO 1: Reemplazamos EstadoChip para mostrar "Enviada" visualmente
+                    val estadoVisible = if (cot.estado.equals("En Revisión", ignoreCase = true)) "Enviada" else cot.estado
+                    Surface(
+                        color = colorTextoEstado.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(colorTextoEstado))
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = estadoVisible,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = colorTextoEstado
+                            )
+                        }
+                    }
                 }
 
                 Spacer(Modifier.height(8.dp))
@@ -963,9 +982,29 @@ private fun TarjetaCotizacion(cot: Cotizacion, onVerPedido: (String) -> Unit) {
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         if (abierta) {
+
+                            // CAMBIO 2: Agregamos weight(1f) al nombre para que no aplaste el precio
                             cot.items.forEach { item ->
-                                FilaMonto("${item.cantidad} × ${item.nombreMostrado}", dinero(item.subtotalMostrado))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Text(
+                                        text = "${item.cantidad} × ${item.nombreMostrado}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TsSecundario,
+                                        modifier = Modifier.weight(1f).padding(end = 12.dp)
+                                    )
+                                    Text(
+                                        text = dinero(item.subtotalMostrado),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TsSecundario,
+                                        maxLines = 1
+                                    )
+                                }
                             }
+
                             HorizontalDivider(Modifier.padding(vertical = 8.dp), color = TsBorde)
                             FilaMonto("Subtotal neto", dinero(cot.subtotalNeto))
                             if (cot.descuento > 0.0) {

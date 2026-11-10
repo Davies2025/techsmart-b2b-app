@@ -5,7 +5,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,6 +30,7 @@ import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
@@ -232,9 +232,7 @@ fun RmaScreen(viewModel: RmaViewModel) {
                         }
                     }
                     state.tickets.isEmpty() -> item {
-                        EstadoSinReclamos(
-                            onCrearReclamo = { formularioAbierto = true }
-                        )
+                        EstadoSinReclamos()
                     }
                     ticketsFiltrados.isEmpty() -> item {
                         Surface(
@@ -357,7 +355,7 @@ private fun TableroGarantiasRma(
                     TarjetaMetricaRma(
                         modifier = Modifier.weight(1f),
                         numero = "$activos",
-                        etiqueta = "En proceso",
+                        etiqueta = "Enviadas",
                         colorNumero = Color.White
                     )
                     TarjetaMetricaRma(
@@ -366,39 +364,6 @@ private fun TableroGarantiasRma(
                         etiqueta = "Casos DOA",
                         colorNumero = mentaPulso
                     )
-                    TarjetaMetricaRma(
-                        modifier = Modifier.weight(1f),
-                        numero = "$resueltos",
-                        etiqueta = "Resueltos",
-                        colorNumero = Color(0xFF93C5FD)
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.Black.copy(alpha = 0.24f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        listOf("1. Reporte", "2. Bodega", "3. Diagnóstico", "4. Solución").forEach { paso ->
-                            Text(
-                                text = paso,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.sp,
-                                color = Color.White.copy(alpha = 0.88f)
-                            )
-                        }
-                    }
                 }
             }
         }
@@ -594,7 +559,7 @@ private fun EncabezadoCasosRma(activos: Int) {
             border = BorderStroke(1.dp, TsPrimario.copy(alpha = 0.22f))
         ) {
             Text(
-                text = "$activos EN PROCESO",
+                text = "$activos Casos",
                 style = MaterialTheme.typography.labelSmall,
                 fontFamily = FuenteMono,
                 fontWeight = FontWeight.ExtraBold,
@@ -648,7 +613,7 @@ private fun ChipFiltroRma(
 }
 
 @Composable
-private fun EstadoSinReclamos(onCrearReclamo: () -> Unit) {
+private fun EstadoSinReclamos() {
     val verdeEsmeralda = Color(0xFF0A876C)
 
     Surface(
@@ -701,21 +666,41 @@ private fun EstadoSinReclamos(onCrearReclamo: () -> Unit) {
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(16.dp))
 
-            OutlinedButton(
-                onClick = onCrearReclamo,
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, TsPrimario)
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = TsPrimario.copy(alpha = 0.06f),
+                border = BorderStroke(1.dp, TsPrimario.copy(alpha = 0.15f)),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Outlined.AddCircleOutline, null, Modifier.size(16.dp), tint = TsPrimario)
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = "Crear un reporte ahora",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = TsPrimario
-                )
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = null,
+                        tint = TsPrimario,
+                        modifier = Modifier.size(20.dp).padding(top = 2.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Proceso de Garantía",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TsPrimario
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Las garantías serán validadas físicamente por nuestro personal técnico. Si el daño es de fábrica, nos pondremos en contacto contigo de inmediato para coordinar el reemplazo.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TsSecundario.copy(alpha = 0.85f),
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
             }
         }
     }
@@ -1450,7 +1435,7 @@ private fun BarraProgresoRma(etapaActual: Int, colorActivo: Color) {
 }
 
 private fun etapaDeEstado(estado: String): Int = when (estado) {
-    "Reportado", "En Revisión" -> 1
+    "Reportado", "Enviada" -> 1
     "Recibido en Bodega", "En Bodega" -> 2
     "En Diagnóstico Técnico" -> 3
     "Cambio Aprobado", "Cerrado", "Entregada", "Aprobada" -> 4

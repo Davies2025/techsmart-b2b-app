@@ -16,7 +16,8 @@ data class ItemProducto(
     val nombre: String = "",
     val sku: String = "",
     val precio: Double = 0.0,
-    val imagen: String = ""
+    val imagen: String = "",
+    val precioVolumen: List<PrecioVolumen> = emptyList()
 )
 
 /**
