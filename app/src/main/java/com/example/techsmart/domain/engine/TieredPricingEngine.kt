@@ -3,6 +3,8 @@ package com.example.techsmart.domain.engine
 import com.example.techsmart.data.model.ItemCotizacion
 import com.example.techsmart.data.model.ItemProducto
 import com.example.techsmart.data.model.Producto
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 /**
  * Motor de Cálculo Comercial y Precios Dinámicos por Escala (Tiered Pricing Engine).
@@ -13,6 +15,10 @@ import com.example.techsmart.data.model.Producto
 object TieredPricingEngine {
 
     const val IVA_EL_SALVADOR = 0.13
+
+    /** Redondea un monto a centavos (mitad hacia arriba): 214.135 -> 214.14. */
+    fun centavos(monto: Double): Double =
+        BigDecimal(monto.toString()).setScale(2, RoundingMode.HALF_UP).toDouble()
 
     /**
      * Evalúa la matriz de descuentos escalonados asociada al producto.
@@ -61,11 +67,12 @@ object TieredPricingEngine {
      * descuento = (precio base × cantidad) − subtotal neto; IVA 13% sobre el subtotal neto.
      */
     fun calcularTotales(items: List<ItemCotizacion>): TotalesCotizacion {
-        val subtotalBase = items.sumOf { it.precioBase * it.cantidad }
-        val subtotalNeto = items.sumOf { it.subtotalMostrado }
-        val descuento = (subtotalBase - subtotalNeto).coerceAtLeast(0.0)
-        val iva = subtotalNeto * IVA_EL_SALVADOR
-        val total = subtotalNeto + iva
+        // Todo en centavos: lo que se guarda y se cobra es lo mismo que se muestra
+        val subtotalBase = centavos(items.sumOf { it.precioBase * it.cantidad })
+        val subtotalNeto = centavos(items.sumOf { it.subtotalMostrado })
+        val descuento = centavos((subtotalBase - subtotalNeto).coerceAtLeast(0.0))
+        val iva = centavos(subtotalNeto * IVA_EL_SALVADOR)
+        val total = centavos(subtotalNeto + iva)
 
         return TotalesCotizacion(
             subtotalNeto = subtotalNeto,

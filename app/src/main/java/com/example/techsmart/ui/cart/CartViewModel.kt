@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.techsmart.data.model.Cotizacion
 import com.example.techsmart.data.model.ItemCotizacion
+import com.example.techsmart.data.model.Pago
 import com.example.techsmart.data.model.Producto
 import com.example.techsmart.data.model.Usuario
 import com.example.techsmart.data.repository.TechsmartRepository
@@ -16,6 +17,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /** Datos que el cliente llena (o revisa) antes de enviar la cotización. */
 data class DatosCotizacion(
@@ -50,6 +54,7 @@ data class CartUiState(
     val perfil: Usuario? = null,
     val misCotizaciones: List<Cotizacion> = emptyList(),
     val cargandoCotizaciones: Boolean = false,
+    val misPagos: List<Pago> = emptyList(),
     val isSubmitting: Boolean = false,
     val folioGuardado: String? = null,
     val compraConfirmada: String? = null,   // folio de la compra recién pagada
@@ -67,6 +72,7 @@ class CartViewModel(
     val uiState: StateFlow<CartUiState> = _uiState.asStateFlow()
 
     private var jobCotizaciones: Job? = null
+    private var jobPagos: Job? = null
 
     fun agregarProducto(producto: Producto, cantidad: Int) {
         if (cantidad <= 0) return
@@ -151,9 +157,24 @@ class CartViewModel(
 
     // Vacía todo el estado (se usa al cerrar sesión para que el carrito
     // no pase a la siguiente persona que use el dispositivo)
+    // Escucha en tiempo real los pagos de la cuenta (historial y pantalla del pedido)
+    fun observarMisPagos() {
+        jobPagos?.cancel()
+        jobPagos = viewModelScope.launch {
+            repository.getMisPagos().collect { result ->
+                result.fold(
+                    onSuccess = { lista -> _uiState.update { it.copy(misPagos = lista) } },
+                    onFailure = { err -> _uiState.update { it.copy(error = err.toFriendlyMessage()) } }
+                )
+            }
+        }
+    }
+
     fun vaciar() {
         jobCotizaciones?.cancel()
         jobCotizaciones = null
+        jobPagos?.cancel()
+        jobPagos = null
         _uiState.value = CartUiState()
     }
 
@@ -252,7 +273,17 @@ class CartViewModel(
                 documentoFiscal = if (esEmpresa) Cotizacion.DOC_CCF else Cotizacion.DOC_CONSUMIDOR_FINAL
             )
 
-            repository.guardarCotizacion(compra).fold(
+            // Comprobante del pago (se guarda en 'pagos' junto con el pedido)
+            val pago = Pago(
+                metodo = datos.metodoPago,
+                referencia = datos.pagoReferencia,
+                monto = estado.totales.total,
+                iva = estado.totales.iva,
+                estado = if (esTransferencia) Pago.ESTADO_PENDIENTE else Pago.ESTADO_APROBADO,
+                hora = SimpleDateFormat("hh:mm a", Locale.US).format(Date())
+            )
+
+            repository.registrarCompra(compra, pago).fold(
                 onSuccess = { folio ->
                     _uiState.update {
                         it.copy(

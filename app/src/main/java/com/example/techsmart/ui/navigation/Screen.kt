@@ -25,6 +25,8 @@ sealed class Screen(
     // Flujo de compra ("Comprar ahora"). No están en la barra inferior: se marca "Cotizaciones".
     data object Carrito : Screen("carrito", "Carrito", Icons.Outlined.RequestQuote, "Carrito de Compras")
     data object Checkout : Screen("checkout", "Pago", Icons.Outlined.RequestQuote, "Checkout")
+    // Historial de compras, cotizaciones y pagos (desde el menú de la cuenta)
+    data object Historial : Screen("historial", "Historial", Icons.Outlined.RequestQuote, "Mi Historial")
     data object Pedido : Screen("pedido/{folio}", "Pedido", Icons.Outlined.RequestQuote, "Mi Pedido") {
         fun ruta(folio: String) = "pedido/$folio"
     }
