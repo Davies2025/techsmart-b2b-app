@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,7 +62,9 @@ fun LogoTechsmart(tamano: Dp = 42.dp, modifier: Modifier = Modifier) {
 fun BarraSuperiorTechsmart(
     subtitulo: String,
     correoSesion: String? = null,
-    onCerrarSesion: (() -> Unit)? = null
+    onCerrarSesion: (() -> Unit)? = null,
+    // Asesor IA: el botón aparece en todas las vistas que usan esta barra
+    onAbrirChat: (() -> Unit)? = null
 ) {
     var menuAbierto by remember { mutableStateOf(false) }
     val cianPulso = Color(0xFF00C2FF)
@@ -115,6 +118,35 @@ fun BarraSuperiorTechsmart(
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = TsPrimario
+                        )
+                    }
+                }
+
+                if (onAbrirChat != null) {
+                    Box(Modifier.padding(end = 10.dp)) {
+                        FilledIconButton(
+                            onClick = onAbrirChat,
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = Color(0xFF075E54) // mismo verde del widget de la web
+                            ),
+                            modifier = Modifier.size(42.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.SmartToy,
+                                contentDescription = "Abrir Asesor IA",
+                                tint = Color.White
+                            )
+                        }
+                        // Punto verde de "en línea"
+                        Box(
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(TsSuperficie)
+                                .padding(2.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF25D366))
                         )
                     }
                 }

@@ -4,7 +4,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -17,6 +20,8 @@ import com.example.techsmart.ui.auth.LoginScreen
 import com.example.techsmart.ui.auth.RegisterScreen
 import com.example.techsmart.ui.cart.CartScreen
 import com.example.techsmart.ui.cart.CartViewModel
+import com.example.techsmart.ui.chat.ChatSheet
+import com.example.techsmart.ui.chat.ChatViewModel
 import com.example.techsmart.ui.catalog.CatalogScreen
 import com.example.techsmart.ui.catalog.CatalogViewModel
 import com.example.techsmart.ui.components.BarraSuperiorTechsmart
@@ -37,11 +42,14 @@ import com.example.techsmart.ui.theme.TsSuperficie
 fun AppNavigation(
     catalogViewModel: CatalogViewModel = viewModel(),
     cartViewModel: CartViewModel = viewModel(),
-    rmaViewModel: RmaViewModel = viewModel()
+    rmaViewModel: RmaViewModel = viewModel(),
+    chatViewModel: ChatViewModel = viewModel()
 ) {
     val navController = rememberNavController()
     val authRepo = remember { AuthRepository() }
     val carrito by cartViewModel.uiState.collectAsStateWithLifecycle()
+    // El Asesor IA se abre encima de cualquier vista principal
+    var chatAbierto by rememberSaveable { mutableStateOf(false) }
 
     // Si ya hay sesión guardada, se entra directo a Inicio
     val startDestination =
@@ -70,6 +78,8 @@ fun AppNavigation(
         // Que el carrito y los reclamos no pasen a la siguiente persona que use el dispositivo
         cartViewModel.vaciar()
         rmaViewModel.vaciar()
+        chatViewModel.reiniciar()
+        chatAbierto = false
         navController.navigate(Screen.AuthRoutes.LOGIN) {
             popUpTo(navController.graph.id) { inclusive = true }
         }
@@ -81,7 +91,8 @@ fun AppNavigation(
                 BarraSuperiorTechsmart(
                     subtitulo = pantallaActual.subtitulo,
                     correoSesion = authRepo.currentEmail,
-                    onCerrarSesion = cerrarSesion
+                    onCerrarSesion = cerrarSesion,
+                    onAbrirChat = { chatAbierto = true }
                 )
             }
         },
@@ -224,5 +235,9 @@ fun AppNavigation(
                 RmaScreen(viewModel = rmaViewModel)
             }
         }
+    }
+
+    if (chatAbierto && pantallaActual != null) {
+        ChatSheet(viewModel = chatViewModel, onCerrar = { chatAbierto = false })
     }
 }
