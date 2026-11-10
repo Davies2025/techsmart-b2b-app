@@ -27,7 +27,6 @@ import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Schedule
@@ -44,7 +43,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,7 +53,7 @@ import com.example.techsmart.data.model.Usuario
 import com.example.techsmart.ui.components.*
 import com.example.techsmart.ui.theme.*
 
-private const val INDICE_ACTIVAS = 2
+private const val INDICE_ACTIVAS = 1
 
 @Composable
 fun CartScreen(
@@ -80,7 +78,7 @@ fun CartScreen(
         state.folioGuardado?.let { folio ->
             viewModel.consumirCotizacionGuardada()
             lista.animateScrollToItem(INDICE_ACTIVAS)
-            snackbar.showSnackbar("Cotización $folio enviada. Quedó en revisión.")
+            snackbar.showSnackbar("Cotización $folio enviada.")
         }
     }
     LaunchedEffect(state.error) {
@@ -160,9 +158,10 @@ fun CartScreen(
                         cotizacionesTotales = state.misCotizaciones.size
                     )
                 }
-                item {
-                    if (state.items.isEmpty()) LoteVacio(onIrACatalogo)
-                    else NuevaSolicitud(state, viewModel, onIrACatalogo, onComprarAhora)
+                if (state.items.isNotEmpty()) {
+                    item {
+                        NuevaSolicitud(state, viewModel, onIrACatalogo, onComprarAhora)
+                    }
                 }
                 item {
                     EncabezadoHistorial(
@@ -261,7 +260,7 @@ private fun HeaderCotizador(
 
                         Column {
                             Text(
-                                text = "CENTRAL DE LOTES",
+                                text = "Techsmart",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.ExtraBold,
                                 letterSpacing = 1.sp,
@@ -280,7 +279,7 @@ private fun HeaderCotizador(
                 Spacer(Modifier.height(10.dp))
 
                 Text(
-                    text = "Descuentos automáticos por escala, cálculo de IVA 13% y compra inmediata.",
+                    text = "Descuentos automáticos, cálculo de IVA 13% y compra inmediata.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.85f)
                 )
@@ -348,7 +347,7 @@ private fun EncabezadoHistorial(total: Int) {
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                text = "Cotizaciones Activas",
+                text = "Cotizaciones del Usuario",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
                 color = TsSecundario
@@ -381,100 +380,6 @@ private fun datosDesdePerfil(perfil: Usuario?): DatosCotizacion {
         telefono = perfil.telefono,
         correo = perfil.correo
     )
-}
-
-@Composable
-private fun LoteVacio(onIrACatalogo: () -> Unit) {
-    val verdeEsmeralda = Color(0xFF0A876C)
-
-    Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = Color.White,
-        shadowElevation = 4.dp,
-        border = BorderStroke(1.2.dp, TsPrimario.copy(alpha = 0.20f)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFFF2F7FF), Color.White, Color(0xFFF0FBF7))
-                    )
-                )
-        ) {
-            Canvas(modifier = Modifier.matchParentSize()) {
-                drawCircle(
-                    color = TsPrimario.copy(alpha = 0.06f),
-                    radius = size.width * 0.35f,
-                    center = Offset(size.width * 0.92f, size.height * 0.20f)
-                )
-            }
-
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = TsPrimario.copy(alpha = 0.10f),
-                    border = BorderStroke(1.dp, TsPrimario.copy(alpha = 0.20f)),
-                    modifier = Modifier.size(60.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.NoteAdd,
-                            contentDescription = null,
-                            tint = TsPrimario,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                Text(
-                    text = "Tu lote está listo para armarse",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = TsSecundario,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "Explora el catálogo para agregar hardware, activar precios por volumen o comprar al instante.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TsNeutro,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                Button(
-                    onClick = onIrACatalogo,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = verdeEsmeralda,
-                        contentColor = Color.White
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                ) {
-                    Icon(Icons.Outlined.Inventory2, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "Explorar Catálogo",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, null, Modifier.size(16.dp))
-                }
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -531,7 +436,7 @@ private fun NuevaSolicitud(
                         Spacer(Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Mi Lote Activo",
+                                text = "MI LOTE ACTIVO",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = TsSecundario
@@ -552,7 +457,7 @@ private fun NuevaSolicitud(
                         border = BorderStroke(1.dp, TsPrimario.copy(alpha = 0.25f))
                     ) {
                         Text(
-                            text = "+ Agregar más",
+                            text = "+ Agregar",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.ExtraBold,
                             color = TsPrimario,
@@ -684,7 +589,7 @@ private fun NuevaSolicitud(
                                     color = TsPrimario
                                 )
                                 Text(
-                                    text = "Envía el lote a revisión comercial con vigencia",
+                                    text = "Envía el lote a revisión comercial",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = TsNeutro
                                 )

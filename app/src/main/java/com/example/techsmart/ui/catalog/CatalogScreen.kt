@@ -72,7 +72,7 @@ fun CatalogScreen(
                 productoSeleccionado = null
                 scope.launch {
                     snackbar.currentSnackbarData?.dismiss()
-                    snackbar.showSnackbar("$cantidad × ${prod.nombre} agregado al lote")
+                    snackbar.showSnackbar("$cantidad × ${prod.nombre} agregado al carrito")
                 }
             }
         )
@@ -263,7 +263,7 @@ fun CatalogScreen(
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = categoria ?: "Catálogo Directo",
+                                    text = categoria ?: "Catálogo",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = TsSecundario,
@@ -312,7 +312,7 @@ fun CatalogScreen(
                                             onAgregarAlCarrito(producto, 1)
                                             scope.launch {
                                                 snackbar.currentSnackbarData?.dismiss()
-                                                snackbar.showSnackbar("1 × ${producto.nombre} agregado al lote")
+                                                snackbar.showSnackbar("1 × ${producto.nombre} agregado al carrito")
                                             }
                                         }
                                     )
@@ -399,7 +399,7 @@ private fun TarjetaProductoCompacta(
             Canvas(modifier = Modifier.matchParentSize()) {
                 drawCircle(
                     color = colorAcento.copy(alpha = 0.09f),
-                    radius = size.width * 0.34f,
+                    radius = size.width * 0.25f,
                     center = Offset(size.width * 0.92f, size.height * 0.18f)
                 )
                 drawCircle(
@@ -438,7 +438,7 @@ private fun TarjetaProductoCompacta(
                                     )
                                     Spacer(Modifier.width(3.dp))
                                     Text(
-                                        text = "TOP",
+                                        text = "Top",
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color(0xFFB45309)
@@ -580,7 +580,7 @@ private fun TarjetaProductoCompacta(
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = if (mejorOferta != null) "Ver Ficha y Ofertas" else "Ver Ficha Técnica",
+                                text = if (mejorOferta != null) "Ver Ficha" else "Ver Ficha Técnica",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = colorAcento
@@ -1055,7 +1055,7 @@ private fun BarraLote(unidades: Int, subtotal: Double, onVerLote: () -> Unit) {
 
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = "Mi Lote de Cotización",
+                        text = "Mis Productos",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White
@@ -1077,7 +1077,7 @@ private fun BarraLote(unidades: Int, subtotal: Double, onVerLote: () -> Unit) {
                     )
                 ) {
                     Text(
-                        "Ver Lote",
+                        "Ver Cotización",
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.width(6.dp))

@@ -467,7 +467,7 @@ fun HomeScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "Series validadas • Despacho inmediato",
+                                text = "Series de Productos",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color.White.copy(alpha = 0.72f)
                             )
